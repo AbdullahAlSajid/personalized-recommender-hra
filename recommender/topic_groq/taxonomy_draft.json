@@ -1,0 +1,34 @@
+{
+  "broad_topics": [
+    "Dyr og natur",
+    "Festivaler og feiring",
+    "Vitenskap og teknologi",
+    "Kultur og samfunn",
+    "Mat og ernæring",
+    "Idrett og fysisk aktivitet",
+    "Helse og medisin",
+    "Musikk og kunst",
+    "Litteratur og lesing",
+    "Historie og geografi",
+    "Miljø og klima",
+    "Ungdom og utdanning",
+    "Innovasjon og oppfinnelser",
+    "Menneskelig utvikling og psykologi"
+  ],
+  "rationale": {
+    "Dyr og natur": "Inneholder emner som handler om dyr, natur, og dyreliv",
+    "Festivaler og feiring": "Inneholder emner som handler om festivaler, feiring og tradisjoner",
+    "Vitenskap og teknologi": "Inneholder emner som handler om vitenskap, teknologi og forskning",
+    "Kultur og samfunn": "Inneholder emner som handler om kultur, samfunn og sosiale forhold",
+    "Mat og ernæring": "Inneholder emner som handler om mat, ernæring og kosthold",
+    "Idrett og fysisk aktivitet": "Inneholder emner som handler om idrett, fysisk aktivitet og trening",
+    "Helse og medisin": "Inneholder emner som handler om helse, medisin og sykdom",
+    "Musikk og kunst": "Inneholder emner som handler om musikk, kunst og kreativitet",
+    "Litteratur og lesing": "Inneholder emner som handler om litteratur, lesing og språk",
+    "Historie og geografi": "Inneholder emner som handler om historie, geografi og samfunnskunnskap",
+    "Miljø og klima": "Inneholder emner som handler om miljø, klima og naturvern",
+    "Ungdom og utdanning": "Inneholder emner som handler om ungdom, utdanning og skole",
+    "Innovasjon og oppfinnelser": "Inneholder emner som handler om innovasjon, oppfinnelser og teknologi",
+    "Menneskelig utvikling og psykologi": "Inneholder emner som handler om menneskelig utvikling, psykologi og atferd"
+  }
+}
