@@ -1,5 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
+import { Passcode } from "./pages/Passcode";
+import { Consent } from "./pages/Consent";
 import { Login } from "./pages/Login";
 import { Interests } from "./pages/Interests";
 import { Dashboard } from "./pages/Dashboard";
@@ -11,7 +13,9 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Layout,
     children: [
-      { index: true, Component: Login },
+      { index: true, Component: Passcode },
+      { path: "consent", Component: Consent },
+      { path: "login", Component: Login },
       { path: "interests", Component: Interests },
       { path: "dashboard", Component: Dashboard },
       { path: "reading/:id", Component: Reading },

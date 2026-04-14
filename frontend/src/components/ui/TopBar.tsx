@@ -1,23 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { endSession } from '../../lib/session';
 
 export function TopBar() {
   const navigate = useNavigate();
 
-  const user = JSON.parse(localStorage.getItem('loggedInUser') || 'null');
-
-  const displayName =
-    user?.username ||
-    user?.name ||
-    user?.full_name ||
-    user?.first_name ||
-    user?.student_id ||
-    'Bruker';
-
-  const handleLogout = () => {
-    localStorage.removeItem('loggedInUser');
-    localStorage.removeItem('recommendations');
+  const handleLogout = async () => {
+    await endSession();
     navigate('/');
   };
 
@@ -29,24 +19,14 @@ export function TopBar() {
         </h1>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-[#e0ddd5] shadow-sm">
-          <div className="w-8 h-8 rounded-full bg-[#e0ddd5] flex items-center justify-center text-[#5d6875]">
-            <User size={16} />
-          </div>
-          <span className="text-sm font-medium text-[#2d3142]">
-            {displayName}
-          </span>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="p-2 text-[#5d6875] hover:text-[#f4a261] transition-colors rounded-full hover:bg-[#faf8f5]"
-          title="Logg ut"
-        >
-          <LogOut size={20} />
-        </button>
-      </div>
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-2 text-[#5d6875] hover:text-[#f4a261] transition-colors rounded-full px-3 py-2 hover:bg-[#faf8f5]"
+        title="Avslutt økt"
+      >
+        <LogOut size={20} />
+        <span className="text-sm font-medium">Avslutt</span>
+      </button>
     </div>
   );
 }

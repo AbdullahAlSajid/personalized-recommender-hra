@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { TopBar } from "../components/ui/TopBar";
-import { Card } from "../components/ui/Card";
+import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/Button";
 import { RadioGroup } from "../components/ui/RadioGroup";
 import { TextArea } from "../components/ui/textarea";

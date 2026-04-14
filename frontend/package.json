@@ -44,6 +44,7 @@
     "react-resizable-panels": "^2.1.7",
     "react-router": "*",
     "recharts": "^2.15.2",
+    "serve": "^14.2.6",
     "sonner": "^2.0.3",
     "tailwind-merge": "*",
     "vaul": "^1.1.2"
@@ -58,6 +59,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "start": "serve -s build -l 3000"
   }
 }

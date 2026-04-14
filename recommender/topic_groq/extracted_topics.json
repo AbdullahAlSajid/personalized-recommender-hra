@@ -2,12 +2,13 @@
   {
     "text_id": "01ff8ad2-ef5b-4cf2-8f1d-b44663790fa4",
     "title": "Ørner",
-    "main_topic": "Rovfugler",
+    "main_topic": "Ørner",
     "sub_topics": [
-      "Natur og dyreliv",
-      "Kultur og symbolikk",
-      "Norsk fauna"
+      "Rovfugler",
+      "Dyreliv",
+      "Kulturelle symboler"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -16,42 +17,46 @@
     "main_topic": "Astronauter og romforskning",
     "sub_topics": [
       "Romreiser",
-      "Astronautenes hverdag",
-      "Verdensrommet og fysikk"
+      "Astronauters hverdag",
+      "Vektløshet i verdensrommet"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "02df17fa-3bfa-4f87-8cd5-d523c12c9a1f",
     "title": "Snork",
-    "main_topic": "Barndom og Familie",
+    "main_topic": "Familieferie",
     "sub_topics": [
-      "Vikingtida og historie",
-      "Humor og satire",
-      "Familie og relasjoner"
+      "Barnas opplevelser",
+      "Familierelasjon",
+      "Humor"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "035af603-c895-4f40-a3e8-4b05a07a09bd",
     "title": "Miniatyrer - gjennom nåløyet",
-    "main_topic": "Mikroskulptur",
+    "main_topic": "Mikroskulptører",
     "sub_topics": [
       "Kunst og design",
       "Teknologi og innovasjon",
-      "Verdens minste ting"
+      "Nyskapende teknikker"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "05c18c0e-b6b5-40b8-9009-130b044693c6",
     "title": "NRK",
-    "main_topic": "Norsk medieselskap",
+    "main_topic": "NRK og medier",
     "sub_topics": [
-      "NRKs historie",
-      "Mediebransjen",
-      "Offentlig service"
+      "Norsk medielandskap",
+      "Radiosendinger",
+      "TV-kanaler"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -60,42 +65,46 @@
     "main_topic": "Elg",
     "sub_topics": [
       "Norsk fauna",
-      "Dyreliv og økologi",
-      "Vilt og jakthistorie"
+      "Dyreliv",
+      "Villdyr"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "06a147ad-07a9-4bf5-a012-7f5f3b33a0c1",
     "title": "Rasmus er ulydig",
-    "main_topic": "Katter og oppførsel",
+    "main_topic": "En ulydig katt",
     "sub_topics": [
-      "Dyrevelferd",
-      "Familie og hverdagsliv",
-      "Barndom og læring"
+      "Familieliv",
+      "Dyr som husdyr",
+      "Barndom og oppvekst"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "0af832ca-a33b-4606-96ce-1904d99101d3",
     "title": "Unionsoppløsningen",
-    "main_topic": "Norsk historie",
+    "main_topic": "Unionsoppløsningen",
     "sub_topics": [
-      "Unionsoppløsningen",
-      "Nasjonsbygging",
+      "Norsk historie",
+      "Nasjonbygging",
       "Norsk selvstendighet"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "0b8506ca-81ea-4c3f-804f-2bdfa9d1f359",
     "title": "Hvordan kan katter jakte om natten?",
-    "main_topic": "Katter og jakting",
+    "main_topic": "Katter og jakt",
     "sub_topics": [
-      "Natur og dyreliv",
-      "Kattens sanser",
-      "Rovdyr og adferd"
+      "Kattens sanseorganer",
+      "Rovdyr",
+      "Nattjakt"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -103,21 +112,23 @@
     "title": "Golden Gate Bridge",
     "main_topic": "Golden Gate Bridge",
     "sub_topics": [
-      "Berømte byggverk",
-      "Amerikansk historie",
-      "Ingeniørkunst"
+      "Ingeniørkunst",
+      "Amerikanske landemerker",
+      "Brobygging"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "0fba2df7-e926-43d5-a393-5c52d5c1f30e",
     "title": "Forskeporske - tiss og wasabi",
-    "main_topic": "Merkeveldige forskningsprosjekter",
+    "main_topic": "Vitenskapelig forskning",
     "sub_topics": [
-      "Vitenskapelige forskningspriser",
-      "Underholdning og humor",
-      "Nysgjerrighet og oppdagelser"
+      "Ig Nobelprisen",
+      "Merkeveldige eksperimenter",
+      "Vitenskapelige prisutdelinger"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -127,8 +138,9 @@
     "sub_topics": [
       "Politikk",
       "Kulturpriser",
-      "Valgprosesser"
+      "Valgprosess"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -140,6 +152,7 @@
       "Sjøfartshistorie",
       "Geografisk oppdagelse"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -148,9 +161,10 @@
     "main_topic": "Gepard",
     "sub_topics": [
       "Rovdyr",
-      "Afrikas fauna",
+      "Norsk fauna",
       "Truede arter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -158,21 +172,23 @@
     "title": "Tregrense",
     "main_topic": "Tregrense",
     "sub_topics": [
-      "Natur og dyreliv",
-      "Skog og trær",
-      "Klima og vær"
+      "Skandinavias flora",
+      "Fjellområder",
+      "Klimaendringer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "1392d190-21e2-4ab2-b1a7-c86349f09096",
     "title": "Hundeverdenens utrolige mangfold",
-    "main_topic": "Hunderaser",
+    "main_topic": "Hunder",
     "sub_topics": [
-      "Hundeverden",
-      "Dyremangfold",
-      "Raser og variasjoner"
+      "Hunderaser",
+      "Dyreliv",
+      "Biologisk mangfold"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -184,6 +200,7 @@
       "Rovdyr",
       "Truede arter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -191,21 +208,23 @@
     "title": "Skihopping",
     "main_topic": "Skihopping",
     "sub_topics": [
-      "Vinteridrett",
-      "Norsk idrettshistorie",
-      "Konkurranser og turneringer"
+      "Idrett",
+      "Vintersport",
+      "Konkurranser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "14bdcf5a-e89b-4217-9f81-ba6cb4b39d06",
     "title": "Snømannen",
-    "main_topic": "Vinter og snø",
+    "main_topic": "En syk gutt",
     "sub_topics": [
-      "Barndom og lek",
-      "Sykdom og hverdagsliv",
-      "Vennskap og sosiale relasjoner"
+      "Vinter og snø",
+      "Venner og lek",
+      "Sykdom og hjemme"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -213,10 +232,11 @@
     "title": "Tornadojeger",
     "main_topic": "Ekstremvær",
     "sub_topics": [
-      "Værfenomener",
-      "Natur og klima",
-      "Eventyr og opplevelser"
+      "Tornadoer",
+      "Tordenvær",
+      "Værmelding"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -224,32 +244,35 @@
     "title": "Tim Burton",
     "main_topic": "Tim Burton",
     "sub_topics": [
-      "Amerikansk film",
-      "Kunstneriske biografier",
-      "Fantasy og underholdning"
+      "Filmregissører",
+      "Amerikansk popkultur",
+      "Filmkarriere"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "1858b8c5-593f-48a0-ac69-ba6a7f329ffc",
     "title": "Rock",
-    "main_topic": "Rockemusikk",
+    "main_topic": "Rock musikk",
     "sub_topics": [
       "Musikksjangere",
-      "Musikkhistorie",
-      "Kultur og underholdning"
+      "Rock historie",
+      "Musikkinstrumenter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "18f3aec0-5630-45c6-97f2-88fc3aa6b260",
     "title": "Bier",
-    "main_topic": "Bier og insekter",
+    "main_topic": "Bier og deres biologi",
     "sub_topics": [
-      "Norsk fauna",
-      "Insektliv og adferd",
-      "Natur og økologi"
+      "Insektbiologi",
+      "Pollinering",
+      "Norsk fauna"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -257,21 +280,23 @@
     "title": "Eliteserien i fotball",
     "main_topic": "Eliteserien i fotball",
     "sub_topics": [
-      "Norsk fotball",
-      "Idrett og sport",
-      "Fotballstatistikk"
+      "Fotball",
+      "Norsk idrett",
+      "Ligatabeller"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "1c3764f7-25c1-4d4f-9546-2e80cd2886a0",
     "title": "Hvorfor hilser man i naturen, men ikke i byen?",
-    "main_topic": "Sosiale mønster",
+    "main_topic": "Hilsen i naturen",
     "sub_topics": [
-      "Natur og bymiljø",
-      "Menneskelig interaksjon",
-      "Kultur og etikette"
+      "Sosiale normer",
+      "By- og naturmiljø",
+      "Menneskelig interaksjon"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -279,10 +304,11 @@
     "title": "Miniatyrroboter",
     "main_topic": "Miniatyrroboter",
     "sub_topics": [
-      "Teknologiske nyheter",
+      "Robotikk",
       "Forskning og utvikling",
-      "Nanoteknologi"
+      "Teknologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -294,17 +320,19 @@
       "Dyreliv i skogen",
       "Pattedyr"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "1e3f0ec3-58c0-4e07-a07b-d4138b04d28b",
     "title": "Ulv",
-    "main_topic": "Ulv og levevis",
+    "main_topic": "Ulv",
     "sub_topics": [
       "Norsk fauna",
-      "Truede arter",
-      "Dyrsocialitet"
+      "Rovdyr",
+      "Truede arter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -313,20 +341,22 @@
     "main_topic": "Solenergi",
     "sub_topics": [
       "Fornybar energi",
-      "Oppvarmingsteknologi",
+      "Varme og klima",
       "Natur og miljø"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "1faebffe-a83e-48ca-9f07-b44494c31e09",
     "title": "Smertefull skjønnhet",
-    "main_topic": "Skjønnhetsidealer",
+    "main_topic": "Skjønnhetsideal",
     "sub_topics": [
-      "Kroppsforandringer",
-      "Historiske skjønnhetsnormer",
-      "Kosmetikk og helse"
+      "Kroppsideal",
+      "Historiske skjønnhetsidealer",
+      "Estetisk behandling"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -334,21 +364,23 @@
     "title": "Arkeologi",
     "main_topic": "Arkeologi",
     "sub_topics": [
-      "Historie og kultur",
-      "Forskning og metoder",
-      "Oldtidens samfunn"
+      "Historie",
+      "Forskningsmetoder",
+      "Kultur og samfunn"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "26de2208-ba68-436b-ade0-b0ed7227f593",
     "title": "Hvordan vinne valget",
-    "main_topic": "Skolevalg",
+    "main_topic": "Valg og politikk",
     "sub_topics": [
+      "Skoleliv",
       "Elevråd",
-      "Valgkamp",
-      "Sosiale strategier"
+      "Politisk strategi"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -356,32 +388,35 @@
     "title": "Hvilke rettigheter har barn?",
     "main_topic": "Barns rettigheter",
     "sub_topics": [
-      "FNs barnekonvensjon",
-      "Barnesårbarhet",
+      "Barnekonvensjonen",
+      "Forente Nasjoner",
       "Menneskerettigheter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "2882b6ab-5804-4cc3-a959-95a2ce8d6f9d",
     "title": "Bli med å dødse!",
-    "main_topic": "Dødsing",
+    "main_topic": "Dødsing som sport",
     "sub_topics": [
+      "Norsk idrettshistorie",
       "Vannsport",
-      "Norske idretter",
-      "Sommeraktiviteter"
+      "Ekstreme idretter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "2caac847-2d7a-420d-9a28-201fd4fd9615",
     "title": "Hvorfor leker jenter med dukker og gutter med gravemaskiner?",
-    "main_topic": "Kjønnsroller i barndommen",
+    "main_topic": "Kjønnsroller og lek",
     "sub_topics": [
       "Barns utvikling",
-      "Sosial påvirkning",
-      "Kjønnsstereotyper"
+      "Sosialisering",
+      "Kjønnsskiller"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -389,54 +424,59 @@
     "title": "Bestemor",
     "main_topic": "Barndom og bestemor",
     "sub_topics": [
-      "Familie og nærhet",
-      "Dagligliv ogaktiviteter",
-      "Norsk historie og tradisjoner"
+      "Familie og eldre",
+      "Barndomsminner",
+      "Krigstid i Norge"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "2edc7545-6e2c-4444-b095-a33eef9d89b5",
     "title": "Prompekorpset",
-    "main_topic": "17. mai-feiring",
+    "main_topic": "17. mai feiring",
     "sub_topics": [
-      "Barns fantasi",
-      "Humor og komedie",
-      "Norsk kultur"
+      "Korp og musikk",
+      "Familie og lokale begivenheter",
+      "Humor og absurditet"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "2f3b3853-2bf2-4b11-b609-dbd798cd9da9",
     "title": "Festivaler-juni",
-    "main_topic": "Festivaler og tradisjoner",
+    "main_topic": "Rare festivaler",
     "sub_topics": [
-      "Verdenskultur",
-      "Unike hendelser",
-      "Internasjonale feiringer"
+      "Festivaler i juni",
+      "Internasjonale tradisjoner",
+      "Unike konkurranser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "2fdc5f31-e4e9-40fc-9871-6b3b24295cab",
     "title": "Gifttenner",
-    "main_topic": "Giftige reptiler",
+    "main_topic": "Gifttenner hos reptiler",
     "sub_topics": [
-      "Slanger og øgler",
-      "Reptilbiologi",
-      "Dyreforståelse"
+      "Reptiler",
+      "Giftige dyr",
+      "Dyrefysiologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "3650eb17-6551-4ac4-a82d-d726bbc1e3fc",
     "title": "Politikk i USA",
-    "main_topic": "USAs politiske system",
+    "main_topic": "Amerikansk politikk",
     "sub_topics": [
-      "Demokrati og valg",
-      "Forbundsstat og delstater",
-      "President og regjering"
+      "Demokrati",
+      "Forbundsstat",
+      "Presidentvalg"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -445,31 +485,34 @@
     "main_topic": "Universets oppbygning",
     "sub_topics": [
       "Astronomi",
-      "Kosmologi",
-      "Galakser og stjerner"
+      "Stjerner og planeter",
+      "Big Bang-teorien"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "3c792d1d-4254-4cd6-9add-f54548fcb0b4",
     "title": "Premier League",
-    "main_topic": "Engelsk fotball",
+    "main_topic": "Premier League",
     "sub_topics": [
-      "Premier League",
-      "Fotball-serier",
-      "Idrett nyheter"
+      "Engelsk fotball",
+      "Herrer",
+      "Fotballsaison"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "3e82e052-0205-46aa-ba9b-33e769c91d0e",
     "title": "Vaksine",
-    "main_topic": "Vaksiner og helse",
+    "main_topic": "Vaksiner",
     "sub_topics": [
       "Immunforsvaret",
-      "Legemidler",
-      "Sykdomsforebygging"
+      "Medisinsk behandling",
+      "Helse"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -477,21 +520,23 @@
     "title": "Fakta om mat og andre greier ",
     "main_topic": "Sjokolade",
     "sub_topics": [
-      "Norsk matkultur",
-      "Sør-Amerikansk historie",
-      "Europas matvaner"
+      "Mat og drikke",
+      "Sør-Amerikansk kultur",
+      "Europas historie"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "4037c816-0f0a-443d-983c-c6429fcd5631",
     "title": "Det er utrolig gøy å klatre",
-    "main_topic": "Klatresport",
+    "main_topic": "Klatring som hobby",
     "sub_topics": [
-      "Idrett og fysisk aktivitet",
+      "Idrett og fritid",
       "Sikkerhet og utstyr",
-      "Personlig utvikling og mot"
+      "Personlig utvikling"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -499,10 +544,11 @@
     "title": "Rare nyttårstradisjoner     ",
     "main_topic": "Nyttårstradisjoner",
     "sub_topics": [
-      "Internasjonale skikker",
-      "Folkelige tradisjoner",
-      "Kulturelle feiringer"
+      "Danske tradisjoner",
+      "Grønlandske skikker",
+      "Finske nyttårsritualer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -510,10 +556,11 @@
     "title": "Hvorfor er Isaac Newton så berømt?",
     "main_topic": "Isaac Newton",
     "sub_topics": [
-      "Fysikk og matematikk",
-      "Vitenskapelige oppdagelser",
-      "Tyngdekraft og gravitasjon"
+      "Fysikk",
+      "Matematikk",
+      "Vitenskapshistorie"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -521,10 +568,11 @@
     "title": "Rovdyr",
     "main_topic": "Rovdyr",
     "sub_topics": [
+      "Natur og dyreliv",
       "Norsk fauna",
-      "Dyreliv",
-      "Økologi"
+      "Økosystemer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -532,10 +580,11 @@
     "title": "Vulkaner",
     "main_topic": "Vulkaner",
     "sub_topics": [
-      "Jordens geologi",
-      "Naturkatastrofer",
-      "Miljø og klima"
+      "Natur og geologi",
+      "Vulkanutbrudd",
+      "Geografiske fenomen"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -543,65 +592,71 @@
     "title": "Hundespråk",
     "main_topic": "Hundespråk",
     "sub_topics": [
-      "Dyrs intelligens",
-      "Kommunikasjon med dyr",
-      "Forskning på hunder"
+      "Dyrekommunikasjon",
+      "Forskningsprosjekt",
+      "Hundetraining"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "508732df-3cab-4e97-bc2d-67dad3f7650d",
     "title": "Skikk og bruk",
-    "main_topic": "Kulturell kompetanse",
+    "main_topic": "Kulturell kommunikasjon",
     "sub_topics": [
-      "Internasjonal kommunikasjon",
-      "Sosiale normer",
-      "Måltidsetikkete"
+      "Internasjonal etikette",
+      "Hilsing og oppførsel",
+      "Matvaner og tradisjoner"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "50ff716b-f451-4fa4-9193-19cfd654df4f",
     "title": "Thunberg",
-    "main_topic": "Klima og miljø",
+    "main_topic": "Greta Thunberg",
     "sub_topics": [
-      "Greta Thunberg",
       "Klimaaktivisme",
-      "Ungdom og politikk"
+      "Ungdomsengasjement",
+      "Miljøvernsarbeid"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "5110ee66-2869-4aea-8b02-9ef70040a15f",
     "title": "Festivaler – januar",
-    "main_topic": "Festivaler og feiring",
+    "main_topic": "Festivaler",
     "sub_topics": [
-      "Kulturfestivaler",
-      "Internasjonale tradisjoner",
-      "Underholdning og lek"
+      "Kultur og tradisjoner",
+      "Internasjonale arrangementer",
+      "Underholdning"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "523ca096-2ceb-4584-ba78-4adc7a7c4da1",
     "title": "Skikk og bruk ",
-    "main_topic": "Kulturelle forskjeller",
+    "main_topic": "Interkulturelle relasjoner",
     "sub_topics": [
-      "Internasjonal etikette",
-      "Klesvaner og tradisjoner",
-      "Kommunikasjon og respekt"
+      "Kulturelle normer",
+      "Etikette og høflighet",
+      "Internasjonal kommunikasjon"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "52b4157f-0a92-40fe-bf18-a4f9819b175d",
     "title": "Da hønsene skulle til fotograf",
-    "main_topic": "Høns og fotografering",
+    "main_topic": "Familie og dyr",
     "sub_topics": [
-      "Familie og hjemmeliv",
-      "Dyr og oppdragelse",
-      "Kreativitet og hobbyer"
+      "Familieliv",
+      "Høns som kjæledyr",
+      "Fotografering"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -609,21 +664,23 @@
     "title": "Miniatyrskrift",
     "main_topic": "Miniatyrskrift",
     "sub_topics": [
-      "Kreativ kommunikasjon",
-      "Romantiske gaver",
-      "Unike opplevelser"
+      "Kjærlighetsbrev",
+      "Valentinesdager",
+      "Romantiske invitasjoner"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "54971d96-8f95-43f5-9571-d0751d61d3c4",
     "title": "Hvorfor gråter vi?",
-    "main_topic": "Tårer og gråt",
+    "main_topic": "Gråt og tårer",
     "sub_topics": [
       "Menneskets fysiologi",
-      "Følelsesuttrykk",
+      "Følelser og atferd",
       "Barns utvikling"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -631,32 +688,35 @@
     "title": "Danmark",
     "main_topic": "Danmark",
     "sub_topics": [
-      "Natur og klima",
-      "Folk og kultur",
-      "Geografi og økonomi"
+      "Norsk geografi",
+      "Europas land",
+      "Kultur og historie"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "56c0e9bf-a4f1-4f6f-8153-6836ca2c81d6",
     "title": "Lisas mobbeapp",
-    "main_topic": "Mobbing og anti-mobbing",
+    "main_topic": "Mobbeforståelse",
     "sub_topics": [
-      "Barns rettigheter",
-      "Superhelter og fantasi",
-      "Konfliktløsning"
+      "Superhelte",
+      "Antimobbing",
+      "Barns hverdagsliv"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "585819ce-a7f2-43be-afef-9c423268363a",
     "title": "Hvordan en vannpumpe avslørte et av medisinens store mysterier",
-    "main_topic": "Kolera og epidemier",
+    "main_topic": "Kolera og medisin",
     "sub_topics": [
-      "Medisinsk historie",
+      "Historisk medisin",
       "Vannforsyning og hygiene",
-      "Sykdomsbekjempelse"
+      "Sykdomsutbrudd"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -664,21 +724,23 @@
     "title": "Blekkspruter – rampestreker og tentakler",
     "main_topic": "Blekkspruter",
     "sub_topics": [
+      "Dyrliv",
       "Marinbiologi",
-      "Dyrekognition",
-      "Akvarie-dyr"
+      "Intelligens hos dyr"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "5b1d7ea2-04c0-472c-848d-ca34d672ef6f",
     "title": "Jerv",
-    "main_topic": "Jerven",
+    "main_topic": "Jerv",
     "sub_topics": [
-      "Norsk fauna",
       "Rovdyr",
+      "Norsk fauna",
       "Truede arter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -686,10 +748,11 @@
     "title": "Romerriket",
     "main_topic": "Romerriket",
     "sub_topics": [
-      "Antikkens historie",
-      "Europas kulturhistorie",
-      "Imperier og statsdannelser"
+      "Antikk historie",
+      "Europas oldtid",
+      "Romersk kultur"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -697,32 +760,35 @@
     "title": "Miniatyrting og tang",
     "main_topic": "Miniatyrmodeller",
     "sub_topics": [
-      "Kunst og håndverk",
-      "Lek og kreativitet",
-      "Teknologi og innovasjon"
+      "Matmodeller",
+      "Dukkehus",
+      "Kunst og håndverk"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "61642524-35d9-4667-8e2d-7ab880acdeef",
     "title": "Plateosaurus",
-    "main_topic": "Plateosaurus",
+    "main_topic": "Plateosaurus dinosaur",
     "sub_topics": [
+      "Utdødde dyr",
       "Dinosaurer",
-      "Prehistorisk liv",
       "Fossiler"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "68182e89-cb0b-49b7-aeaa-fcf5697300ea",
     "title": "Da jeg møtte lille rev",
-    "main_topic": "Hunde som kjeledyr",
+    "main_topic": "Hunden min",
     "sub_topics": [
-      "Barndomsminner",
-      "Dyrevelferd",
-      "Familie og hjem"
+      "Familieliv",
+      "Dyr som husdyr",
+      "Barndomserfaringer"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -731,9 +797,10 @@
     "main_topic": "Svalbardrein",
     "sub_topics": [
       "Natur og dyreliv",
-      "Evolutasjon og tilpasning",
+      "Evolutjon",
       "Arktisk klima"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -741,65 +808,71 @@
     "title": "Haviguanen Godzilla",
     "main_topic": "Haviguanen",
     "sub_topics": [
-      "Norsk fauna",
-      "Dyreliv i havet",
-      "Galapagosøyene"
+      "Galapagosøyene",
+      "Havdyr",
+      "Øgler"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "6bc9c963-db46-498d-ad23-9cdeea6ef584",
     "title": "Svømmeleiren",
-    "main_topic": "Barndom og frykt",
+    "main_topic": "Svømmeleir",
     "sub_topics": [
-      "Svømmeleir og aktiviteter",
-      "Emosjonell utvikling",
-      "Forhold mellom mor og barn"
+      "Barndomsminner",
+      "Svømming",
+      "Angst og frykt"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "702046b4-0989-4791-bea0-f3af572a15d3",
     "title": "Spetter",
-    "main_topic": "Spetter",
+    "main_topic": "Fugler i Norge",
     "sub_topics": [
-      "Fugler i Norge",
-      "Natur og dyreliv",
+      "Norsk fauna",
+      "Fuglearter",
       "Økosystemer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "726510e2-3412-4594-a9d6-161d5f3b4304",
     "title": "Tiger",
-    "main_topic": "Tigeren",
+    "main_topic": "Tiger dyret",
     "sub_topics": [
       "Rovdyr",
-      "Natur og dyreliv",
+      "Norsk fauna",
       "Truede arter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "756801df-1081-4651-a875-c1c253962315",
     "title": "EKG",
-    "main_topic": "Hjertemedisinsk diagnostikk",
+    "main_topic": "EKG-test",
     "sub_topics": [
-      "EKG-teknikk",
-      "Hjertesykdommer",
-      "Medisinske tester"
+      "Hjertehelse",
+      "Medisinske tester",
+      "Hjerte sykdommer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "7692bfef-fef9-44be-9236-91cd8e17dc0a",
     "title": "Solenergi",
-    "main_topic": "Fornybar energi",
+    "main_topic": "Solenergi",
     "sub_topics": [
-      "Solenergi",
-      "Bærekraftig teknologi",
-      "Naturressurser"
+      "Fornybar energi",
+      "Energikilder",
+      "Miljø"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -808,31 +881,34 @@
     "main_topic": "Hjort",
     "sub_topics": [
       "Norsk fauna",
-      "Dyreliv og økologi",
-      "Vilde dyr"
+      "Dyreliv",
+      "Vilt"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "7f273bc9-da41-43cf-a507-6b80b505f209",
     "title": "Festivaler – november",
-    "main_topic": "Festivaler og feiringer",
+    "main_topic": "Festivaler i november",
     "sub_topics": [
-      "Kulturelle tradisjoner",
-      "Internasjonale festivaler",
-      "Dagens temaer og symbolikk"
+      "Mexicanske tradisjoner",
+      "Engelske konkurranser",
+      "Kulturelle feiringer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "817017c0-06fc-4360-838c-347a810afae0",
     "title": "Hvordan lever man i en megaby?",
-    "main_topic": "Byutvikling og urbanisering",
+    "main_topic": "Megabyer",
     "sub_topics": [
-      "Megabyer",
-      "Urbanisering i ulike land",
-      "Levealder i store byer"
+      "Byutvikling",
+      "Urbanisering",
+      "Befolkningsøkning"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -841,21 +917,22 @@
     "main_topic": "Hiphop-kultur",
     "sub_topics": [
       "Musikkhistorie",
-      "Dans og kunst",
-      "Samfunnskritikk",
-      "Kulturell identitet"
+      "Amerikansk kultur",
+      "Dans og mote"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "85f12e36-5df7-497b-9fd8-b9f32ea2fbf4",
     "title": "Tannregulering",
-    "main_topic": "Tannhelse",
+    "main_topic": "Tannregulering",
     "sub_topics": [
-      "Tannregulering",
-      "Barns tannpleie",
-      "Tannlegebesøk"
+      "Tannhelse",
+      "Tannpleie",
+      "Barneodontologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -863,43 +940,47 @@
     "title": "Edderkopp i hånda",
     "main_topic": "Edderkopper",
     "sub_topics": [
-      "Insektliv",
-      "Dyreforståelse",
-      "Personlig utvikling"
+      "Dyreliv",
+      "Personlig erfaring",
+      "Overvinning av frykt"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "88100afd-75df-47fb-bd79-ba6dbbaa895d",
     "title": "Da endene fikk eget spa i hagen",
-    "main_topic": "Dyreliv i hagen",
+    "main_topic": "Familie og dyr",
     "sub_topics": [
-      "Ende og fugler",
-      "Hagepynt og design",
-      "Familieliv og sirkus"
+      "Hage og dyrehold",
+      "Barn og foreldre",
+      "Dyrs vilkår"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "8add5b2f-5878-446f-96fc-d4fbf350782f",
     "title": "Demokrati",
-    "main_topic": "Demokrati i Norge",
+    "main_topic": "Demokrati",
     "sub_topics": [
-      "Politikk og styre",
-      "Stemmerett og valg",
-      "Representasjon og folkestyre"
+      "Politikk",
+      "Norsk demokrati",
+      "Stemmerett"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "8c0ea448-b799-4282-bdc0-d5f00b27d52c",
     "title": "Miniatyrkunstner Vladimir Aniskin",
-    "main_topic": "Miniatyrkunst",
+    "main_topic": "Miniatyrkunstner",
     "sub_topics": [
       "Russisk kunst",
-      "Unikit kunst",
-      "Mikroteknologi"
+      "Mikrominiatyrer",
+      "Unike kunstverk"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -907,21 +988,23 @@
     "title": "Vannkraft",
     "main_topic": "Vannkraft",
     "sub_topics": [
-      "Fornybar energi",
-      "Norsk industrihistorie",
-      "Miljø og økologi"
+      "Energi",
+      "Norsk natur",
+      "Miljøvennlig teknologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "8f6cb9c5-1998-4dc1-bca2-f117560285ee",
     "title": "Forskeporske - raping og sure føtter",
-    "main_topic": "Forskning og vitenskap",
+    "main_topic": "Merkelig forskning",
     "sub_topics": [
-      "Merkeveldige oppdagelser",
-      "Ny teknologi",
-      "Menneskelig adferd"
+      "Forskning og vitenskap",
+      "Ig Nobel Price",
+      "Uvanlige studier"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -929,10 +1012,11 @@
     "title": "Vil du hjelpe oss med forskningen vår?",
     "main_topic": "Forskning og testing",
     "sub_topics": [
-      "Leseprøver",
-      "Elevenes erfaringer",
-      "Pedagogisk forskning"
+      "Lesing og læring",
+      "Elevmediasjon",
+      "Forskningsmetoder"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -944,6 +1028,7 @@
       "Sør-Amerikansk kultur",
       "Norsk historie"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -953,8 +1038,9 @@
     "sub_topics": [
       "USAs presidenter",
       "Amerikansk politikk",
-      "Korona-pandemien"
+      "Koronapandemien"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -962,10 +1048,11 @@
     "title": "Miniatyrbøker",
     "main_topic": "Miniatyrbøker",
     "sub_topics": [
-      "Samlingsobjekter",
-      "Bokhistorie",
-      "Ungarsk kultur"
+      "Boksamling",
+      "Ungarsk kultur",
+      "Boktrykking"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -977,39 +1064,43 @@
       "Pollinering",
       "Norsk fauna"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "968c4e7a-edc6-4c88-99a7-f28d75824d08",
     "title": "Kattespråk",
-    "main_topic": "Katter og kommunikasjon",
+    "main_topic": "Kattespråk og kommunikasjon",
     "sub_topics": [
+      "Kattenes atferd",
       "Dyrekommunikasjon",
-      "Kattatferd",
-      "Dyrevelferd"
+      "Katter og mennesker"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "9cec37e6-8377-4bb7-b7a8-c342fbc40cdd",
     "title": "Sjokolademaskinen",
-    "main_topic": "Sjokolade og teknologi",
+    "main_topic": "Sjokolademaskin",
     "sub_topics": [
-      "Barndomsdrømmer",
-      "Mat og drikke",
-      "Innovasjon og oppfinnelser"
+      "Teknologi",
+      "Mat og søtsaker",
+      "Familie og underholdning"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "a19318f2-3173-471a-a3a6-a0fa84c654c7",
     "title": "Nansen liker å jakte",
-    "main_topic": "Katter og jakt",
+    "main_topic": "Kattens jaktvaner",
     "sub_topics": [
-      "Dyreliv hjemme",
-      "Kattatferd",
-      "Norsk fauna"
+      "Dyr som husdyr",
+      "Norsk fauna",
+      "Kattens atferd"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1018,20 +1109,22 @@
     "main_topic": "Nyttårstradisjoner",
     "sub_topics": [
       "Persisk kultur",
-      "Kinesisk kultur",
-      "Festlige tradisjoner"
+      "Kinesisk feiring",
+      "Festlighetstradisjoner"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "a55048a5-40aa-40b5-8f01-9a489e34e52b",
     "title": "Ku med sterk tru",
-    "main_topic": "Dyrehistorier",
+    "main_topic": "Ku og maisåker",
     "sub_topics": [
-      "Norsk landbruk",
-      "Barnefortellinger",
-      "Humor og absurditet"
+      "Dyreliv",
+      "Vær og klima",
+      "Bondeliv"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1040,20 +1133,10 @@
     "main_topic": "Grønnsaker",
     "sub_topics": [
       "Næringsinnhold",
-      "Matlaging",
-      "Dyrking og landbruk"
+      "Dyrking og tilberedning",
+      "Matvarer"
     ],
-    "error": null
-  },
-  {
-    "text_id": "a70d660a-0bb7-4f3d-b41c-b363949cafae",
-    "title": "Teknisk museum",
-    "main_topic": "Teknisk museum",
-    "sub_topics": [
-      "Teknologihistorie",
-      "Mobiltelefoni",
-      "Norsk museum"
-    ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1062,42 +1145,46 @@
     "main_topic": "Nebbdyr",
     "sub_topics": [
       "Pattedyr",
-      "Unike egenskaper",
-      "Dyreværn"
+      "Australsk fauna",
+      "Dyrefysiologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "a87077e3-ab9f-476c-80e3-3d315cf01dc4",
     "title": "Partall",
-    "main_topic": "Mathematikkbegreper",
+    "main_topic": "Partall i matematikk",
     "sub_topics": [
       "Heltall",
-      "Talleregler",
-      "Matematisk terminologi"
+      "Matematikk for barn",
+      "Tall og mål"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "a9820ee0-afb5-4031-a70a-a4dc9fbc95ae",
     "title": "Kostsirkel",
-    "main_topic": "Kosthold og ernæring",
+    "main_topic": "Kost og ernæring",
     "sub_topics": [
-      "Norsk helsepolitikk",
-      "Matvarer og næringsstoff",
-      "Helse og velvære"
+      "Helse",
+      "Norsk kosthold",
+      "Matvarer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "aa211b3c-e14a-4a03-8467-48d47065b837",
     "title": "Hvorfor har ikke kjoler lommer?",
-    "main_topic": "Klesmoten historie",
+    "main_topic": "Kjoler og lommer",
     "sub_topics": [
-      "Kjoler og lommer",
-      "Kvinnerettigheter",
-      "Klesdesign og funksjonalitet"
+      "Klesmote",
+      "Kvinnenes historie",
+      "Likhet og ulikhet"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1105,21 +1192,23 @@
     "title": "«Chuchichäschtli»",
     "main_topic": "Sveitsertysk språk",
     "sub_topics": [
-      "Norsk og tysk språk",
-      "Dialekter og variasjon",
-      "Språklige utfordringer"
+      "Tysk språk",
+      "Dialekter i Sveits",
+      "Språkfamilier"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "ae369ed2-2d48-438b-9d6d-8c0cd7df96b6",
     "title": "Oddetall",
-    "main_topic": "Matematikk",
+    "main_topic": "Oddetall",
     "sub_topics": [
-      "Tall og Zahl",
-      "Grundopplæring",
-      "Matematisk terminologi"
+      "Heltall",
+      "Matematikk",
+      "Tallregning"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1127,10 +1216,11 @@
     "title": "Trump",
     "main_topic": "Donald Trump",
     "sub_topics": [
-      "USA-valg",
-      "Amerikansk politikk",
-      "Presidenter"
+      "USAs president",
+      "Det republikanske partiet",
+      "Politikk i USA"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1139,64 +1229,70 @@
     "main_topic": "Ulver og hunder",
     "sub_topics": [
       "Dyrearter",
-      "Jakt og ernæring",
-      "Atferd og adferd"
+      "Jaktatferd",
+      "Ernæring"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "b25b9ad1-f381-40ac-ad28-59736d4e7182",
     "title": "Disney",
-    "main_topic": "Disney historie",
+    "main_topic": "Walt Disney",
     "sub_topics": [
       "Animasjonsfilmer",
-      "Tegneserier",
-      "Filmprodusenten Walt Disney"
+      "Filmproduksjon",
+      "Disney-selskapet"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "b4435de9-474f-44da-98f6-71a8d2d9509f",
     "title": "Lange, raske tog",
-    "main_topic": "Vennskap og skole",
+    "main_topic": "Vennskap og uhell",
     "sub_topics": [
-      "Barndommens-eventyr",
-      "Tog og transport",
-      "Vennskap og omsorg"
+      "Skoleliv",
+      "Barndomsvenner",
+      "Ulykker og sykdom"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "b7174b6f-ccc5-4088-a740-2243e0a028bc",
     "title": "Grunnloven",
-    "main_topic": "Norsk grunnlov",
+    "main_topic": "Grunnloven",
     "sub_topics": [
-      "Demokrati og styre",
       "Norsk historie",
+      "Demokrati",
       "Menneskerettigheter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "b756c735-64ce-4b67-933f-df89305b3e98",
     "title": "Boksen går",
-    "main_topic": "Barnespill",
+    "main_topic": "Barnelek",
     "sub_topics": [
-      "Gjemsellek",
-      "Regler for leker",
-      "Barnas fritid"
+      "Gjemsel",
+      "Uteaktiviteter",
+      "Barneregler"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "ba75b0bf-ba64-46c4-bbde-3e160a7ff2b6",
     "title": "Forskeporske - skal det være litt øremidd?",
-    "main_topic": "Forskning og vitenskap",
+    "main_topic": "Forskning og prisutdeling",
     "sub_topics": [
-      "Merkeveldige eksperimenter",
-      "Forskning i Norge",
-      "Humor og satire"
+      "Ig Nobel-prisen",
+      "Merkelig forskning",
+      "Forskning i Norge"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1208,6 +1304,7 @@
       "Internasjonale feiringer",
       "Religiøse ritualer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1215,10 +1312,11 @@
     "title": "Antibiotika",
     "main_topic": "Antibiotika",
     "sub_topics": [
-      "Medisin og helse",
-      "Bakterier og infeksjoner",
-      "Legemidler og behandling"
+      "Medisin mot bakterier",
+      "Antibiotikaresistens",
+      "Bakteriebekjempelse"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1226,10 +1324,11 @@
     "title": "Festivaler – mars",
     "main_topic": "Festivaler",
     "sub_topics": [
-      "USA",
+      "Reise",
       "Underholdning",
-      "Merkedage"
+      "Kultur"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1239,19 +1338,21 @@
     "sub_topics": [
       "Norsk fauna",
       "Reptiler",
-      "Dyreliv i naturen"
+      "Dyreliv"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "c442a328-2670-4bb1-b12f-25f9022a53d0",
     "title": "Atom",
-    "main_topic": "Kjemiske grunnstoff",
+    "main_topic": "Atomer og kjemi",
     "sub_topics": [
-      "Atomstruktur",
-      "Molekyler og bindinger",
-      "Kjernefysikk og teknologi"
+      "Grunnstoffer",
+      "Molekyler",
+      "Radioaktivitet"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1259,32 +1360,35 @@
     "title": "Fisk",
     "main_topic": "Fisk",
     "sub_topics": [
-      "Dyreliv",
-      "Akvaatisk biologi",
-      "Natur og miljø"
+      "Natur og dyreliv",
+      "Ferskvannsfisk",
+      "Saltvannsfisk"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "c6fa9a01-df81-44f8-8c6d-796e168647e1",
     "title": "Hvor langt er én mil?",
-    "main_topic": "Målenheter",
+    "main_topic": "Målenheter for lengde",
     "sub_topics": [
-      "Lengdemål",
-      "Norsk mål-system",
-      "Internasjonal standardisering"
+      "Norsk målesystem",
+      "Internasjonale målenheter",
+      "Historie om målenheter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "c82d6e69-67b7-448e-9d4a-389747c59477",
     "title": "Rare nyttårstradisjoner",
-    "main_topic": "Nyttårstradisjoner",
+    "main_topic": "Nyttårsfeiring",
     "sub_topics": [
       "Internasjonale tradisjoner",
       "Kulturelle skikker",
-      "Folketro og lykke"
+      "Fest og feiring"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1292,21 +1396,23 @@
     "title": "Haier",
     "main_topic": "Haier",
     "sub_topics": [
-      "Fiskearter",
-      "Marinbiologi",
-      "Norsk fauna"
+      "Norsk fauna",
+      "Rovfisker",
+      "Haiarter"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "ca1daba3-5a07-4d1c-970e-195cdb70d94f",
     "title": "Primtall",
-    "main_topic": "Matematikk og tall",
+    "main_topic": "Matematikk og primtall",
     "sub_topics": [
-      "Tallteori",
-      "Matematisk beregning",
-      "Primtall egenskaper"
+      "Tall og aritmetikk",
+      "Matematisk teori",
+      "Datamaskinregning"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1314,21 +1420,23 @@
     "title": "Rare nyttårstradisjoner    ",
     "main_topic": "Nyttårstradisjoner",
     "sub_topics": [
-      "Kulturforskjeller",
-      "Festivaler og feiring",
-      "Internasjonale skikker"
+      "Kulturelle skikker",
+      "Internasjonale feiringer",
+      "Folketro"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "cd717230-74bc-4f56-9f4e-c76d0b37c3b6",
     "title": "Fugleklokka",
-    "main_topic": "Fuglenes atferd",
+    "main_topic": "Fuglene og dagslyset",
     "sub_topics": [
       "Trekkfugler",
-      "Dag-nat syklus",
-      "Menneskets instinkt"
+      "Natur og årstider",
+      "Menneskets biologiske klokke"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1336,21 +1444,23 @@
     "title": "Hvilke oppgaver har blodet vårt?",
     "main_topic": "Blodets funksjoner",
     "sub_topics": [
-      "Kroppens transportsystem",
-      "Helse og sykdom",
-      "Kroppens termoregulering"
+      "Menneskekroppen",
+      "Helse og medisin",
+      "Biologi"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "cff1dca1-19eb-4ac0-a620-f8716a287ce8",
     "title": "Så du vil ha hund?",
-    "main_topic": "Hunder og eierskap",
+    "main_topic": "Hund som kjæledyr",
     "sub_topics": [
+      "Hundeplassering",
       "Hundehold",
-      "Hunderaser",
-      "Dyreetikk og ansvar"
+      "Hunderaser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1358,10 +1468,11 @@
     "title": "Smartepettere",
     "main_topic": "Oppfinnelser og innovasjon",
     "sub_topics": [
-      "Teknologi og vitamaskiner",
-      "Kreativitet og problem løsing",
-      "Historiske oppfinnelser og feilslåtte prediksjoner"
+      "Kreativitet og ideutvikling",
+      "Teknologi og Vitenskap",
+      "Innovasjonskultur"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1369,21 +1480,23 @@
     "title": "Kraftproduksjon",
     "main_topic": "Kraftproduksjon",
     "sub_topics": [
-      "Elektrisk energi",
-      "Vannkraft",
-      "Energiforsyning"
+      "Energi",
+      "Norsk industri",
+      "Miljø"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "d6f8be0b-09bc-4a6b-bc3a-81935f1e408a",
     "title": "Minecraft   ",
-    "main_topic": "Minecraft",
+    "main_topic": "Minecraft-overlevelse",
     "sub_topics": [
-      "Videospill",
-      "Overlevelsesspill",
-      "Fantasiverden"
+      "Overlevelse i spill",
+      "Minecraft-verden",
+      "Spillstrategi"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1392,9 +1505,10 @@
     "main_topic": "Truede dyrearter",
     "sub_topics": [
       "Norsk fauna",
-      "Natur og miljø",
-      "Bevaring av arter"
+      "Rødlista",
+      "Natur og miljø"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1406,39 +1520,43 @@
       "Rovdyr",
       "Dyreliv"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "df7c4a2f-2892-4fde-ab30-0628a99659f6",
     "title": "Beite",
-    "main_topic": "Beite og husdyr",
+    "main_topic": "Beite og dyr",
     "sub_topics": [
+      "Husdyr",
       "Norsk landbruk",
-      "Husdyr og fôring",
-      "Natur og dyreliv"
+      "Dyrehold"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "e0372617-8b05-412b-99d3-3e20d023d733",
     "title": "Hundefamilien mynder",
-    "main_topic": "Hunderaser",
+    "main_topic": "Hundefamilien mynder",
     "sub_topics": [
-      "Mynder",
+      "Hunderaser",
       "Hundespråk",
-      "Russisk ulvehund"
+      "Jakthunder"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "e409f726-c5ff-41c2-99e2-4ff26e02e48b",
     "title": "Snøen på Svalbard",
-    "main_topic": "Snø og klima",
+    "main_topic": "Snø og klimaendring",
     "sub_topics": [
-      "Svalbard og Arktis",
-      "Vær og klimaendringer",
-      "Snøras og sikkerhet"
+      "Svalbard",
+      "Vær og klima",
+      "Snøras"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1446,21 +1564,23 @@
     "title": "Svømme i elven Aare",
     "main_topic": "Svømming i elv",
     "sub_topics": [
-      "Vannaktiviteter",
-      "Natur og friluft",
-      "Vennskap og lek"
+      "Vennskap",
+      "Sommeraktiviteter",
+      "Sveitsiske elver"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "e5497fdf-e86d-44a8-80a4-abfbd81ec167",
     "title": "Er barn i Norge fattige?",
-    "main_topic": "Barn og fattigdom",
+    "main_topic": "Fattigdom i Norge",
     "sub_topics": [
-      "Norsk samfunn",
-      "Barndomm og Familie",
-      "Sosial ulikhet"
+      "Barns liv",
+      "Familieøkonomi",
+      "Sosiale forhold"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1468,54 +1588,59 @@
     "title": "Hvorfor bor mennesker på det kaldeste stedet i verden?",
     "main_topic": "Antarktis og Sydpolen",
     "sub_topics": [
-      "Polarforskning",
+      "Utforskning av polområder",
       "Natur og klima",
-      "Vitenskapelige ekspedisjoner"
+      "Vitenskapelige studier"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "e770b9e0-613c-4d4e-a48f-5aaebc4552bb",
     "title": "Aldri mer orgel",
-    "main_topic": "Musikkkurs",
+    "main_topic": "Orgelspilling",
     "sub_topics": [
-      "Orgelspill",
-      "Munnspill",
-      "Barndomsminner"
+      "Musikkundervisning",
+      "Ungdomserfaringer",
+      "Husdyr"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "e8277829-807e-464a-b1b1-dc6a1a2715fb",
     "title": "Hvorfor blir du rød?",
-    "main_topic": "Rødming og fysiologi",
+    "main_topic": "Rødming og kroppens reaksjoner",
     "sub_topics": [
-      "Helse og velvære",
-      "Kroppens reaksjoner",
-      "Psykologi og stress"
+      "Fysiologi",
+      "Stress og anspenthet",
+      "Kroppslige reaksjoner"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "e90f7412-d351-451d-b439-00496e632439",
     "title": "Hvordan kan man kommunisere gjennom tegn?",
-    "main_topic": "Kommunikasjon og tegn",
+    "main_topic": "Kommunikasjon gjennom tegn",
     "sub_topics": [
-      "Datateknologi",
-      "Spraak og språkbruk",
-      "Kulturfenomener"
+      "Emotikoner",
+      "Emoji",
+      "Skrift og tegn"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "e911b350-705f-421e-be3a-e3c2be9370ea",
     "title": "Elementærpartikler",
-    "main_topic": "Fysikk og partikler",
+    "main_topic": "Elementærpartikler",
     "sub_topics": [
-      "Atomteori",
-      "Subatomære partikler",
-      "Kvante-fysikk"
+      "Fysikk",
+      "Kvante-teori",
+      "Materie"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1525,8 +1650,9 @@
     "sub_topics": [
       "Jordens bevegelse",
       "Solsystemet",
-      "Naturfenomener"
+      "Klima og vær"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1534,32 +1660,35 @@
     "title": "Country",
     "main_topic": "Country musikk",
     "sub_topics": [
-      "Amerikansk musikkhistorie",
-      "Folkemusikk",
-      "Populærmusikk"
+      "Musikksjanger",
+      "Amerikansk kultur",
+      "Norsk musikkscene"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "eb9bdcc2-4f92-4010-819f-ccf3bb4547f8",
     "title": "Det første landdyret",
-    "main_topic": "Evolution og dyreliv",
+    "main_topic": "Det første landdyret",
     "sub_topics": [
-      "Fossil og oldtid",
-      "Dyrs utvikling",
-      "Natur og miljø"
+      "Evolutasjon",
+      "Fossiler",
+      "Tusenbein"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "ef1f3473-83fd-4fee-8de1-92b267332fc8",
     "title": "Hvorfor lyser ildfluer?",
-    "main_topic": "Insekter og lys",
+    "main_topic": "Lysbiller og bioluminescens",
     "sub_topics": [
       "Natur og dyreliv",
-      "Insektbiologi",
-      "Lysfenomener"
+      "Insekter",
+      "Biologiske prosesser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1569,30 +1698,33 @@
     "sub_topics": [
       "Marinbiologi",
       "Dyrekommunikasjon",
-      "Havmiljø og menneskelig påvirkning"
+      "Havmiljø"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "f1d118a2-732e-44b8-b899-dfece61291cf",
     "title": "Hvordan fungerer tale hos mennesker?",
-    "main_topic": "Menneskelig kommunikasjon",
+    "main_topic": "Menneskets tale",
     "sub_topics": [
-      "Tale og språk",
-      "Menneskelig fysiologi",
-      "Barns utvikling"
+      "Stemmeproduksjon",
+      "Språklæring",
+      "Menneskekroppen"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "f30d9bd2-d2b7-4d8f-a885-74b2cef9e53f",
     "title": "Oppfinnereren Arthur Paul Pedrick",
-    "main_topic": "Oppfinnere og oppfinnelser",
+    "main_topic": "Oppfinneren Arthur Paul Pedrick",
     "sub_topics": [
-      "Patenter og innovasjon",
-      "Kreativitet og skaperglede",
-      "Teknologi og design"
+      "Oppfinnelser",
+      "Patenter",
+      "Innovasjon"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1602,8 +1734,9 @@
     "sub_topics": [
       "Dyrevelferd",
       "Hundetrening",
-      "Sosialisering"
+      "Veterinærbesøk"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
@@ -1611,10 +1744,11 @@
     "title": "Amerikansk fotball",
     "main_topic": "Amerikansk fotball",
     "sub_topics": [
-      "Idrett og spill",
-      "Norsk idrettsliv",
-      "Fysisk aktivitet og trening"
+      "Idrett",
+      "Ballspill",
+      "Amerikansk idrett"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1622,21 +1756,23 @@
     "title": "Miniatyrer verden rundt",
     "main_topic": "Miniatyrmodeller",
     "sub_topics": [
-      "Verdens kultur",
-      "Turisme og attraksjoner",
+      "Turisme",
+      "Kultur og arkitektur",
       "Teknologi og design"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "f4332c76-8d8a-4af9-9d16-75a46481a765",
     "title": "Hvorfor er planeten Mars rød?",
-    "main_topic": "Planetene i solsystemet",
+    "main_topic": "Planeten Mars",
     "sub_topics": [
-      "Mars",
-      "Astronomi",
-      "Solsystemet"
+      "Solsystemet",
+      "Geologi",
+      "Romerne"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1646,19 +1782,21 @@
     "sub_topics": [
       "Astronomi",
       "Jordas satellitter",
-      "Solystemet"
+      "Universets tilblivelse"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "f7b212b1-5127-4962-8471-2bab8d1a4eea",
     "title": "Festivaler-juli",
-    "main_topic": "Festivaler og feiring",
+    "main_topic": "Festivaler verden over",
     "sub_topics": [
-      "Kulturelle arrangementer",
-      "Verdens festivaler",
-      "Uvanlige tradisjoner"
+      "Uvanlige festivaler",
+      "Kulturelle feiringer",
+      "Reise og opplevelser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1666,21 +1804,11 @@
     "title": "Hvordan kan man lage lyder med et gresstrå?",
     "main_topic": "Musikkinstrumenter",
     "sub_topics": [
-      "Kreativitet og lek",
+      "Kreativitet",
       "Fysikk og lyd",
-      "Natur og utforskning"
+      "Barnaktiviteter"
     ],
-    "error": null
-  },
-  {
-    "text_id": "f8abba27-6b87-4cd6-9f46-66f76ac69f02",
-    "title": "Ungdomsbøker",
-    "main_topic": "Ungdomslitteratur",
-    "sub_topics": [
-      "Barn og ungdom",
-      "Norsk skjønnlitteratur",
-      "Lesning og litteratur"
-    ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1688,32 +1816,35 @@
     "title": "Kull",
     "main_topic": "Begrepet kull",
     "sub_topics": [
-      "Dyreunger",
-      "Klassetrinn",
-      "Familier og slektskap"
+      "Dyreungar",
+      "Slektskap",
+      "Skoleklasser"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "fe2f0035-3c39-4adf-968c-f181daa99cf6",
     "title": "Hvordan kan vi oppfatte lukter?",
-    "main_topic": "Luktesansen",
+    "main_topic": "Lukt og luktesans",
     "sub_topics": [
-      "Nervesystemet",
-      "Sanseorganer",
-      "Biologi og fysiologi"
+      "Menneskekroppen",
+      "Biologi",
+      "Sanseorganer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "fe628cc4-0876-4917-bb12-a8a958412f40",
     "title": "Allosaurus",
-    "main_topic": "Dinosaurer",
+    "main_topic": "Allosaurus dinosaur",
     "sub_topics": [
-      "Prehistorisk liv",
-      "Natur og paleontologi",
-      "Fossil og utgravninger"
+      "Natur og dyreliv",
+      "Fossiler",
+      "Dinosaurer"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
@@ -1725,28 +1856,31 @@
       "Norsk fauna",
       "Rovdyr"
     ],
+    "text_type": "fagtekst",
     "error": null
   },
   {
     "text_id": "ff5a83ee-d44b-47de-8990-a7a90e57b973",
     "title": "«Schwingen» - en uvanlig sport i sagflis",
-    "main_topic": "Sveitsiske idrett",
+    "main_topic": "Schwingen",
     "sub_topics": [
-      "Tradisjonelle leker",
-      "Kulturelle aktiviter",
-      "Uvanlige sporter"
+      "Uvanlige idretter",
+      "Sveitsisk kultur",
+      "Idrettskonkurranser"
     ],
+    "text_type": "fortelling",
     "error": null
   },
   {
     "text_id": "ffffece4-14da-4ed0-819a-a7039a0101d1",
     "title": "Minecraft",
-    "main_topic": "Minecraft-overlevelse",
+    "main_topic": "Minecraft-spill",
     "sub_topics": [
-      "Overlevelse i spill",
-      "Minecraft-verdenen",
-      "Spillstrategi"
+      "Overlevelse",
+      "Spillverden",
+      "Bygging"
     ],
+    "text_type": "fortelling",
     "error": null
   }
 ]

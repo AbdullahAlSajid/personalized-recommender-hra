@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
+import { endSession } from '../lib/session';
 import { TopBar } from '../components/ui/TopBar';
-import { Card } from '../components/ui/Card';
+import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/Button';
 
 type Recommendation = {
@@ -88,7 +89,13 @@ export function Dashboard() {
             </p>
           </div>
 
-          <button className="text-[#5d6875] hover:text-[#4ecdc4] underline underline-offset-4 transition-colors">
+          <button
+            className="text-[#5d6875] hover:text-[#4ecdc4] underline underline-offset-4 transition-colors"
+            onClick={async () => {
+              await endSession();
+              navigate('/');
+            }}
+          >
             Jeg vil ikke lese nå.
           </button>
         </div>

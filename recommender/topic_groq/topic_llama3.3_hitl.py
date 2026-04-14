@@ -1,36 +1,45 @@
 """
 topic_pipeline.py
-=================
-Pipeline for extracting and clustering topics from Norwegian children's texts.
-Uses Groq API (llama-3.3-70b-versatile).
 
-STAGES:
-  1. Load & preprocess TSV
-  2. Per-text topic extraction  (with schema validation + string normalization)
-  3. Draft taxonomy proposal    (model proposes categories from normalized labels only)
-     → PAUSE: researcher reviews/edits taxonomy_draft.json → saves as taxonomy_final.json
-  4. Text assignment            (assign each text to the finalized taxonomy)
-  5. Export CSV + JSON artifacts
+Topic extraction and classification pipeline for Norwegian children's texts.
+Uses Groq API with llama-3.3-70b-versatile.
 
-USAGE:
-  pip install groq pandas
-  export GROQ_API_KEY=gsk_your_key_here
+Stages:
+    1    Load and preprocess input file
+    2    Extract per-text topics via LLM
+    2.5  Sample-based extraction quality check
+    3    Propose draft broad-topic taxonomy
+    3.5  Gap analysis on proposed taxonomy
+    4    Assign texts to finalized taxonomy
+    4.5  Assignment distribution and spot check
+    5    Export results
 
-  # Full run (first time):
-  python topic_pipeline.py --input texts.tsv
+Usage:
+    pip install groq pandas python-dotenv
 
-  # After editing taxonomy_final.json, re-run assignment only:
-  python topic_pipeline.py --input texts.tsv --assign-only
+    # Full run from scratch:
+    python topic_pipeline.py --input texts.csv
 
-  # Re-propose taxonomy from scratch (keep extraction, redo clustering):
-  python topic_pipeline.py --input texts.tsv --skip-extraction
+    # Re-run assignment after editing taxonomy_final.json:
+    python topic_pipeline.py --input texts.csv --assign-only
 
-OUTPUT FILES:
-  extracted_topics.json   — per-text main_topic + sub_topics
-  taxonomy_draft.json     — model-proposed broad categories (edit this → taxonomy_final.json)
-  taxonomy_final.json     — finalized taxonomy used for assignment
-  assignments.json        — text_id → broad_topics mapping
-  results.csv             — everything merged into one CSV
+    # Re-propose taxonomy without re-extracting:
+    python topic_pipeline.py --input texts.csv --skip-extraction
+
+    # Compute evaluation metrics from labeled CSV files:
+    python topic_pipeline.py --input texts.csv --evaluate --compare
+
+Output files:
+    extracted_topics.json           per-text extraction results
+    taxonomy_draft.json             LLM-proposed taxonomy for review
+    taxonomy_final.json             finalized taxonomy (edit from draft)
+    assignments.json                text_id to broad_topics mapping
+    results.csv                     merged final dataset
+    evaluation_sample.csv           extraction sample for manual review
+    assignment_spot_check.csv       assignment sample for manual review
+    evaluation_extraction_metrics.json
+    evaluation_assignment_metrics.json
+    evaluation_metrics.json         combined metrics
 """
 
 import argparse
@@ -39,37 +48,45 @@ import os
 import re
 import time
 import sys
+import random
 from pathlib import Path
 from collections import Counter
+from dotenv import load_dotenv
 
 from groq import Groq
 import pandas as pd
 
 
-# ─────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────
+# ── Configuration ─────────────────────────────────────────────────────────────
 
 MODEL           = "llama-3.3-70b-versatile"
 BATCH_SIZE      = 10
-CHECKPOINT_FILE = "topics_checkpoint.json"
 MAX_RETRIES     = 3
 RETRY_DELAY     = 5
 
-# Output artifact paths
-EXTRACTED_JSON  = "extracted_topics.json"
-DRAFT_JSON      = "taxonomy_draft.json"
-FINAL_JSON      = "taxonomy_final.json"
+CHECKPOINT_FILE  = "topics_checkpoint.json"
+EXTRACTED_JSON   = "extracted_topics.json"
+DRAFT_JSON       = "taxonomy_draft.json"
+FINAL_JSON       = "taxonomy_final.json"
 ASSIGNMENTS_JSON = "assignments.json"
-OUTPUT_CSV      = "results.csv"
+OUTPUT_CSV       = "results.csv"
+
+EVAL_SAMPLE_CSV              = "evaluation_sample.csv"
+ASSIGNMENT_EVAL_CSV          = "assignment_spot_check.csv"
+EVAL_METRICS_JSON            = "evaluation_metrics.json"
+EVAL_EXTRACTION_METRICS_JSON = "evaluation_extraction_metrics.json"
+EVAL_ASSIGNMENT_METRICS_JSON = "evaluation_assignment_metrics.json"
+
+EXTRACTION_SAMPLE_SIZE      = 30
+CATEGORY_SPOT_SIZE          = 5
+THIN_CATEGORY_THRESHOLD     = 5
+BLOATED_CATEGORY_THRESHOLD  = 40
 
 
-# ─────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────
+# ── Utilities ─────────────────────────────────────────────────────────────────
 
 def fix_encoding(text: str) -> str:
-    """Fix UTF-8 text mis-decoded as Latin-1. e.g. 'Ã˜rner' → 'Ørner'"""
+    """Recover Norwegian characters from Latin-1 mis-decoded UTF-8."""
     try:
         return text.encode("latin-1").decode("utf-8")
     except (UnicodeDecodeError, UnicodeEncodeError):
@@ -77,19 +94,12 @@ def fix_encoding(text: str) -> str:
 
 
 def normalize_topic(topic: str) -> str:
-    """
-    Normalize a topic string for consistent clustering:
-    - Strip leading/trailing whitespace
-    - Collapse internal whitespace
-    - Title-case (e.g. 'natur og dyr' → 'Natur og dyr')
-    - Remove trailing punctuation
-    """
+    """Standardize topic string: strip, collapse whitespace, capitalize first letter."""
     if not isinstance(topic, str):
         return ""
     topic = topic.strip()
     topic = re.sub(r'\s+', ' ', topic)
     topic = topic.rstrip('.,;:!?')
-    # Title-case only the first letter, preserve rest
     if topic:
         topic = topic[0].upper() + topic[1:]
     return topic
@@ -105,68 +115,43 @@ def load_json(path: str):
         return json.load(f)
 
 
-# ─────────────────────────────────────────────
-# SCHEMA VALIDATION
-# ─────────────────────────────────────────────
+# ── Schema validation ─────────────────────────────────────────────────────────
 
 class SchemaError(Exception):
     pass
 
 
 def validate_extracted_topics(raw: dict) -> dict:
-    """
-    Validate and coerce the LLM's extraction response into the expected schema.
-
-    Expected:
-      {
-        "main_topic": str (2-5 words),
-        "sub_topics": list[str] (2-4 items)
-      }
-
-    Raises SchemaError if the structure is unrecoverable.
-    Returns a clean, normalized dict if valid (with coercion where safe).
-    """
     if not isinstance(raw, dict):
         raise SchemaError(f"Expected dict, got {type(raw).__name__}")
 
-    # --- main_topic ---
     main = raw.get("main_topic", "")
     if not isinstance(main, str):
-        raise SchemaError(f"main_topic must be a string, got {type(main).__name__}")
+        raise SchemaError(f"main_topic must be str, got {type(main).__name__}")
     main = normalize_topic(main)
     if not main:
         raise SchemaError("main_topic is empty")
 
-    # --- sub_topics ---
     subs = raw.get("sub_topics", [])
-
-    # Coerce: if model returned a string instead of a list, split on commas
     if isinstance(subs, str):
         subs = [s.strip() for s in subs.split(",") if s.strip()]
-
     if not isinstance(subs, list):
-        raise SchemaError(f"sub_topics must be a list, got {type(subs).__name__}")
-
-    # Coerce: filter out non-string items
+        raise SchemaError(f"sub_topics must be list, got {type(subs).__name__}")
     subs = [normalize_topic(s) for s in subs if isinstance(s, str)]
-    subs = [s for s in subs if s]  # drop empty strings after normalization
+    subs = [s for s in subs if s]
+    if not subs:
+        raise SchemaError("sub_topics is empty after normalization")
 
-    if len(subs) < 1:
-        raise SchemaError("sub_topics has no valid entries")
+    text_type = raw.get("text_type", "fagtekst")
+    if text_type not in ("fagtekst", "fortelling"):
+        text_type = "fagtekst"
 
-    return {
-        "main_topic": main,
-        "sub_topics": subs,
-    }
+    return {"main_topic": main, "sub_topics": subs, "text_type": text_type}
 
 
 def validate_taxonomy(taxonomy: list) -> list:
-    """
-    Validate the taxonomy list (broad_topics).
-    Returns normalized list or raises SchemaError.
-    """
     if not isinstance(taxonomy, list):
-        raise SchemaError(f"Taxonomy must be a list, got {type(taxonomy).__name__}")
+        raise SchemaError(f"Expected list, got {type(taxonomy).__name__}")
     normalized = [normalize_topic(t) for t in taxonomy if isinstance(t, str)]
     normalized = [t for t in normalized if t]
     if not (12 <= len(normalized) <= 15):
@@ -175,37 +160,21 @@ def validate_taxonomy(taxonomy: list) -> list:
 
 
 def validate_assignments(assignments: dict, taxonomy: list, index_to_id: dict) -> dict:
-    """
-    Validate assignment dict and remap short numeric keys → real text_ids.
-    Coerces any assigned topic not in taxonomy to the closest match (or drops it).
-    """
-    taxonomy_set = set(taxonomy)
+    taxonomy_set     = set(taxonomy)
     real_assignments = {}
-
     for key, categories in assignments.items():
         real_id = index_to_id.get(str(key))
         if not real_id:
             continue
-
         if not isinstance(categories, list):
             categories = [categories] if isinstance(categories, str) else []
-
-        # Normalize and filter to only valid taxonomy categories
-        clean_cats = []
-        for cat in categories:
-            norm = normalize_topic(cat)
-            if norm in taxonomy_set:
-                clean_cats.append(norm)
-
-        if clean_cats:
-            real_assignments[real_id] = clean_cats
-
+        clean = [normalize_topic(c) for c in categories if normalize_topic(c) in taxonomy_set]
+        if clean:
+            real_assignments[real_id] = clean
     return real_assignments
 
 
-# ─────────────────────────────────────────────
-# STAGE 1 — LOAD & PREPROCESS
-# ─────────────────────────────────────────────
+# ── Stage 1: Load and preprocess ──────────────────────────────────────────────
 
 def strip_markdown(text: str) -> str:
     text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
@@ -242,7 +211,7 @@ def preprocess_row(row: pd.Series) -> dict:
 
     return {
         "text_id":     str(row.get("sanity_text_id", row.get("text_id", ""))),
-        "serial":      str(row.get("serialnumber",   row.get("serial_number", ""))),
+        "serial":      str(row.get("serialnumber", row.get("serial_number", ""))),
         "title":       title,
         "subheadings": subheadings,
         "clean_body":  clean_body,
@@ -257,13 +226,13 @@ def load_and_preprocess(filepath: str) -> list[dict]:
     for enc in ("utf-8", "latin-1", "utf-8-sig"):
         try:
             df = pd.read_csv(filepath, sep=sep, encoding=enc, dtype=str)
-            print(f"  Read {len(df)} raw rows with encoding={enc}")
+            print(f"  Read {len(df)} rows ({enc})")
             break
         except Exception:
             continue
 
     if df is None:
-        raise ValueError(f"Could not read file: {filepath}")
+        raise ValueError(f"Could not read: {filepath}")
 
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
@@ -279,32 +248,34 @@ def load_and_preprocess(filepath: str) -> list[dict]:
     df      = df.reset_index(drop=True)
     dropped = before - len(df)
     if dropped:
-        print(f"  Dropped {dropped} empty rows → {len(df)} valid rows remaining.")
+        print(f"  Dropped {dropped} empty rows — {len(df)} remaining.")
 
     texts = [preprocess_row(row) for _, row in df.iterrows()]
     print(f"  Preprocessed {len(texts)} texts.")
     return texts
 
 
-# ─────────────────────────────────────────────
-# STAGE 2 — PER-TEXT TOPIC EXTRACTION
-# ─────────────────────────────────────────────
+# ── Stage 2: Topic extraction ─────────────────────────────────────────────────
 
-EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert på å klassifisere norske barnetekster.
+EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert på å klassifisere norske barnetekster for elever i alderen 8-12 år.
 For hver tekst du mottar, skal du returnere KUN et JSON-objekt – ingen forklaring, ingen markdown-blokker.
 
 Format:
 {
   "main_topic": "ett kortfattet norsk emne (2-5 ord)",
-  "sub_topics": ["emne1", "emne2", "emne3"]
+  "sub_topics": ["emne1", "emne2", "emne3"],
+  "text_type": "fagtekst" eller "fortelling"
 }
 
 Regler:
 - Skriv alle emner på norsk bokmål
 - main_topic skal fange tekstens primære tema
 - sub_topics: 2-4 underkategorier eller relaterte temaer
-- Vær spesifikk nok til at emnene er meningsfulle, men ikke for smale
-- Eksempel for en tekst om ørner: {"main_topic": "Rovfugler", "sub_topics": ["Natur og dyreliv", "Norsk fauna", "Kultur og symbolikk"]}"""
+- text_type skal være NØYAKTIG ett av disse to:
+    "fortelling" — hvis teksten er en historie, novelle, eller narrativ fiksjon med karakterer og handling
+    "fagtekst"   — hvis teksten er informativ, faktabasert eller forklarende
+- Eksempel fagtekst: {"main_topic": "Rovfugler", "sub_topics": ["Natur og dyreliv", "Norsk fauna"], "text_type": "fagtekst"}
+- Eksempel fortelling: {"main_topic": "Fortelling om katt", "sub_topics": ["Familieliv", "Dyr som husdyr"], "text_type": "fortelling"}"""
 
 
 def build_extraction_prompt(text: dict) -> str:
@@ -314,7 +285,7 @@ def build_extraction_prompt(text: dict) -> str:
     body_preview = text["clean_body"][:1500]
     if len(text["clean_body"]) > 1500:
         body_preview += "\n[...]"
-    return f"""Tittel: {text["title"]}{subheadings_str}\n\nTekst:\n{body_preview}"""
+    return f'Tittel: {text["title"]}{subheadings_str}\n\nTekst:\n{body_preview}'
 
 
 def extract_topics_for_text(client: Groq, text: dict) -> dict:
@@ -334,24 +305,23 @@ def extract_topics_for_text(client: Groq, text: dict) -> dict:
             raw = re.sub(r'^```[a-z]*\n?', '', raw)
             raw = re.sub(r'\n?```$', '', raw)
 
-            parsed   = json.loads(raw)
-            validated = validate_extracted_topics(parsed)
-
+            validated = validate_extracted_topics(json.loads(raw))
             return {
                 **text,
                 "main_topic":       validated["main_topic"],
                 "sub_topics":       validated["sub_topics"],
+                "text_type":        validated["text_type"],
                 "extraction_error": None,
             }
 
         except json.JSONDecodeError as e:
-            print(f"    [!] JSON parse error for '{text['title']}' (attempt {attempt}): {e}")
+            print(f"    [!] JSON error for '{text['title']}' (attempt {attempt}): {e}")
         except SchemaError as e:
             print(f"    [!] Schema error for '{text['title']}' (attempt {attempt}): {e}")
         except Exception as e:
             print(f"    [!] API error for '{text['title']}' (attempt {attempt}): {e}")
             if "rate_limit" in str(e).lower() or "429" in str(e):
-                print(f"    Rate limit — waiting 60s...")
+                print("    Rate limited — waiting 60s...")
                 time.sleep(60)
                 continue
 
@@ -362,6 +332,7 @@ def extract_topics_for_text(client: Groq, text: dict) -> dict:
         **text,
         "main_topic":       "",
         "sub_topics":       [],
+        "text_type":        "fagtekst",
         "extraction_error": "Failed after retries",
     }
 
@@ -381,10 +352,9 @@ def save_checkpoint(results: dict):
 def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
     checkpoint = load_checkpoint()
     results    = {tid: data for tid, data in checkpoint.items()}
-
-    remaining = [t for t in texts if t["text_id"] not in results]
-    total     = len(texts)
-    done      = len(results)
+    remaining  = [t for t in texts if t["text_id"] not in results]
+    total      = len(texts)
+    done       = len(results)
 
     if done > 0:
         print(f"  Resuming: {done}/{total} done, {len(remaining)} remaining.")
@@ -394,7 +364,7 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
         batch_num     = (batch_start // BATCH_SIZE) + 1
         total_batches = (len(remaining) + BATCH_SIZE - 1) // BATCH_SIZE
 
-        print(f"  Batch {batch_num}/{total_batches} — {len(batch)} texts...")
+        print(f"  Batch {batch_num}/{total_batches} ({len(batch)} texts)...")
 
         for text in batch:
             result = extract_topics_for_text(client, text)
@@ -404,94 +374,116 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
             print(f"    [{done}/{total}] {status} {text['title'][:50]}")
 
         save_checkpoint(results)
-        print(f"  Checkpoint saved.")
 
         if batch_start + BATCH_SIZE < len(remaining):
             time.sleep(2)
 
     extracted = list(results.values())
 
-    # Save extracted topics as JSON artifact
     save_json(EXTRACTED_JSON, [
         {
             "text_id":    t["text_id"],
             "title":      t["title"],
             "main_topic": t.get("main_topic", ""),
             "sub_topics": t.get("sub_topics", []),
+            "text_type":  t.get("text_type", "fagtekst"),
             "error":      t.get("extraction_error"),
         }
         for t in extracted
     ])
-    print(f"  Saved extraction results → {EXTRACTED_JSON}")
-
+    print(f"  Saved → {EXTRACTED_JSON}")
     return extracted
 
 
-# ─────────────────────────────────────────────
-# STAGE 3 — DRAFT TAXONOMY PROPOSAL
-# ─────────────────────────────────────────────
-#
-# The model only sees normalized main_topic labels + their frequency —
-# NOT the full text context. This keeps the prompt small and focused.
-#
-# The model proposes 12-15 broad categories based purely on what topics
-# actually appear in the data. The researcher then reviews and finalizes.
-#
-# ─────────────────────────────────────────────
+# ── Stage 2.5: Extraction quality check ───────────────────────────────────────
 
-TAXONOMY_SYSTEM_PROMPT = """Du er en ekspert på å lage emnestruktur for norske barnetekster.
+def run_extraction_quality_check(extracted: list[dict]) -> list[dict]:
+    n      = min(EXTRACTION_SAMPLE_SIZE, len(extracted))
+    sample = random.sample(extracted, n)
 
-Du vil motta en liste over emner hentet fra barnetekster, med hvor mange tekster hvert emne dekker.
-Basert på dette skal du foreslå 12-15 overordnede kategorier som dekker alle emnene.
+    print(f"\n  {'─'*60}")
+    print(f"  EXTRACTION SAMPLE — {n} texts:")
+    print(f"  {'─'*60}")
+    print(f"  {'#':<4} {'Title':<40} {'Type':<12} {'Main Topic':<30} Sub Topics")
+    print(f"  {'─'*60}")
+
+    for i, t in enumerate(sample, 1):
+        subs = ", ".join(t.get("sub_topics", []))
+        print(
+            f"  {i:<4} {t['title'][:38]:<40} {t.get('text_type', '?'):<12} "
+            f"{t.get('main_topic', '')[:28]:<30} {subs[:50]}"
+        )
+
+    if not os.path.exists(EVAL_SAMPLE_CSV):
+        rows = [
+            {
+                "text_id":           t["text_id"],
+                "title":             t["title"],
+                "text_type_llm":     t.get("text_type", ""),
+                "main_topic_llm":    t.get("main_topic", ""),
+                "sub_topics_llm":    " | ".join(t.get("sub_topics", [])),
+                "text_type_manual":  "",
+                "main_topic_manual": "",
+                "sub_topics_manual": "",
+                "correct":           "",
+                "notes":             "",
+            }
+            for t in sample
+        ]
+        pd.DataFrame(rows).to_csv(EVAL_SAMPLE_CSV, index=False, encoding="utf-8-sig")
+        print(f"\n  Sample saved → {EVAL_SAMPLE_CSV}")
+        print(f"  Fill in 'correct' (yes/no) for each row, then run --evaluate --compare.")
+    else:
+        print(f"\n  {EVAL_SAMPLE_CSV} already exists — skipping overwrite.")
+
+    return sample
+
+
+# ── Stage 3: Taxonomy proposal ────────────────────────────────────────────────
+
+TAXONOMY_SYSTEM_PROMPT = """Du er en ekspert på å lage emnestruktur for norske barnetekster for elever i alderen 8-12 år.
+
+Du vil motta en liste over emner hentet fra barnetekster med frekvens, samt antall fortellinger vs fagtekster.
+Basert på dette skal du foreslå 12-15 overordnede kategorier.
 
 Regler:
 - NØYAKTIG 12-15 kategorier
-- Kategoriene skal være TYDELIG FORSKJELLIGE — ingen overlapp
-  (f.eks. IKKE både "Natur og dyr" og "Dyreliv og natur")
-- Kategoriene skal dekke bredden i tekstsamlingen
-- Breie nok til å være meningsfulle, men ikke så brede at alt havner i én kategori
-- På norsk bokmål, passende for barn
-- Hvert emne fra listen skal kunne plasseres i minst én kategori
+- Hvert kategorinavn skal være ET ENKELT ORD på norsk bokmål
+- Kategoriene skal være brede nok til å dekke mange tekster
+- Ingen overlapp mellom kategorier
+- Ordene skal være enkle og gjenkjennelige for barn mellom 8-12 år
+- Kategoriene skal fungere som interessevalg i et anbefalingssystem
+- Hvis mer enn 10 tekster er fortellinger skal "Fortelling" være en egen kategori
 
 Returner KUN et JSON-objekt:
 {
-  "broad_topics": ["Kategori1", "Kategori2", ...],
+  "broad_topics": ["Dyr", "Vitenskap", ...],
   "rationale": {
-    "Kategori1": "Kort begrunnelse for denne kategorien",
+    "Dyr": "Kort begrunnelse",
     ...
   }
 }"""
 
 
 def build_taxonomy_prompt(extracted: list[dict]) -> str:
-    """
-    Build a compact prompt from normalized main_topic labels and their frequency.
-    Does NOT include full text body — only the extracted topic labels.
-    """
-    # Count frequency of each normalized main_topic
-    topic_counts = Counter(
-        t.get("main_topic", "")
-        for t in extracted
-        if t.get("main_topic")
-    )
-
-    # Sort by frequency descending
+    topic_counts  = Counter(t.get("main_topic", "") for t in extracted if t.get("main_topic"))
     sorted_topics = sorted(topic_counts.items(), key=lambda x: -x[1])
+    lines         = [f"- {topic} ({count} tekster)" for topic, count in sorted_topics]
 
-    lines = [f"- {topic} ({count} tekster)" for topic, count in sorted_topics]
+    fortelling_count = sum(1 for t in extracted if t.get("text_type") == "fortelling")
+    fagtekst_count   = sum(1 for t in extracted if t.get("text_type") == "fagtekst")
 
     return (
-        f"Her er alle {len(extracted)} tekstenes main_topic med frekvens:\n\n"
+        f"Tekstsamlingen inneholder {len(extracted)} tekster:\n"
+        f"- Fagtekster: {fagtekst_count}\n"
+        f"- Fortellinger: {fortelling_count}\n\n"
+        f"Her er alle tekstenes main_topic med frekvens:\n\n"
         + "\n".join(lines)
         + "\n\nForeslå 12-15 overordnede kategorier som dekker disse emnene."
     )
 
 
 def propose_taxonomy(client: Groq, extracted: list[dict]) -> dict:
-    """
-    Ask the model to propose a draft taxonomy based on normalized topic labels only.
-    Returns {"broad_topics": [...], "rationale": {...}}
-    """
     prompt = build_taxonomy_prompt(extracted)
 
     for attempt in range(1, MAX_RETRIES + 1):
@@ -511,74 +503,162 @@ def propose_taxonomy(client: Groq, extracted: list[dict]) -> dict:
             result   = json.loads(raw)
             taxonomy = validate_taxonomy(result.get("broad_topics", []))
             result["broad_topics"] = taxonomy
-
             return result
 
         except (json.JSONDecodeError, SchemaError) as e:
-            print(f"  [!] Taxonomy proposal error (attempt {attempt}): {e}")
+            print(f"  [!] Taxonomy error (attempt {attempt}): {e}")
         except Exception as e:
             print(f"  [!] API error (attempt {attempt}): {e}")
 
         if attempt < MAX_RETRIES:
             time.sleep(RETRY_DELAY * attempt)
 
-    raise RuntimeError("Taxonomy proposal failed after all retries.")
+    raise RuntimeError("Taxonomy proposal failed.")
 
 
-# ─────────────────────────────────────────────
-# STAGE 4 — TEXT ASSIGNMENT
-# ─────────────────────────────────────────────
-#
-# Given a finalized taxonomy (from taxonomy_final.json),
-# assign each text to 1-3 broad topics.
-# Uses short numeric indexes to keep response size small.
-# ─────────────────────────────────────────────
+# ── Stage 3.5: Gap analysis ───────────────────────────────────────────────────
 
-ASSIGNMENT_SYSTEM_PROMPT = """Du er en ekspert på å klassifisere norske barnetekster.
+GAP_ANALYSIS_SYSTEM_PROMPT = """Du er en ekspert på tekstklassifisering.
+
+Du vil motta:
+1. En liste over foreslåtte brede kategorier
+2. En liste over ekstraherte main_topics fra tekstene med frekvens
+3. Antall fortellinger i samlingen
+
+Finn main_topics som IKKE passer naturlig inn i noen av de foreslåtte kategoriene.
+
+Returner KUN et JSON-objekt:
+{
+  "unmatched": [
+    {
+      "topics": ["topic1", "topic2"],
+      "reason": "Hvorfor disse ikke passer i noen eksisterende kategori",
+      "suggested_category": "Forslag til ny kategori (ett enkelt ord på norsk)"
+    }
+  ],
+  "warnings": ["Advarsel om mulige overlapp eller tvetydigheter"],
+  "coverage": "Kort vurdering av dekning"
+}
+
+Returner unmatched som tom liste [] hvis alle topics er dekket.
+Vær særlig oppmerksom på:
+- Matematikk-relaterte topics som kan forveksles med Mat
+- Teknologi vs Vitenskap
+- Fortellinger som kan trenge egen kategori"""
+
+
+def run_gap_analysis(client: Groq, extracted: list[dict], taxonomy: list) -> dict:
+    topic_counts     = Counter(t.get("main_topic", "") for t in extracted if t.get("main_topic"))
+    sorted_topics    = sorted(topic_counts.items(), key=lambda x: -x[1])
+    topics_str       = "\n".join(f"- {t} ({c} tekster)" for t, c in sorted_topics)
+    taxonomy_str     = "\n".join(f"- {t}" for t in taxonomy)
+    fortelling_count = sum(1 for t in extracted if t.get("text_type") == "fortelling")
+
+    prompt = (
+        f"Foreslåtte kategorier:\n{taxonomy_str}\n\n"
+        f"Ekstraherte main_topics:\n{topics_str}\n\n"
+        f"Antall fortellinger: {fortelling_count}\n\n"
+        f"Finn topics uten kategori og gi advarsler om mulige problemer."
+    )
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = client.chat.completions.create(
+                model=MODEL,
+                max_tokens=2000,
+                messages=[
+                    {"role": "system", "content": GAP_ANALYSIS_SYSTEM_PROMPT},
+                    {"role": "user",   "content": prompt},
+                ],
+            )
+            raw = response.choices[0].message.content.strip()
+            raw = re.sub(r'^```[a-z]*\n?', '', raw)
+            raw = re.sub(r'\n?```$', '', raw)
+            return json.loads(raw)
+
+        except Exception as e:
+            print(f"  [!] Gap analysis error (attempt {attempt}): {e}")
+
+        if attempt < MAX_RETRIES:
+            time.sleep(RETRY_DELAY * attempt)
+
+    return {"unmatched": [], "warnings": [], "coverage": "Gap analysis failed"}
+
+
+def print_gap_analysis(gaps: dict):
+    print(f"\n  {'─'*54}")
+    print(f"  GAP ANALYSIS")
+    print(f"  {'─'*54}")
+    print(f"  {gaps.get('coverage', '')}")
+
+    for w in gaps.get("warnings", []):
+        print(f"\n  ⚠ {w}")
+
+    unmatched = gaps.get("unmatched", [])
+    if unmatched:
+        print(f"\n  {len(unmatched)} gap(s) found:")
+        for gap in unmatched:
+            print(f"\n  Topics:    {', '.join(gap.get('topics', []))}")
+            print(f"  Reason:    {gap.get('reason', '')}")
+            print(f"  Suggested: {gap.get('suggested_category', '')}")
+    else:
+        print("\n  All topics covered.")
+
+
+# ── Stage 4: Text assignment ──────────────────────────────────────────────────
+
+ASSIGNMENT_SYSTEM_PROMPT = """Du er en ekspert på å klassifisere norske barnetekster for elever i alderen 8-12 år.
 
 Du vil motta:
 1. En godkjent liste over brede kategorier
-2. En liste over tekster (nummerert 1, 2, 3...) med tittel og hovedemne
+2. En liste over tekster (nummerert 1, 2, 3...) med tittel, teksttype, hovedemne og underemner
 
 Tildel hver tekst 1-3 kategorier fra den godkjente listen.
 
 Regler:
-- Bruk KUN kategorier fra den godkjente listen — ikke oppfinn nye
+- Bruk KUN kategorier fra den godkjente listen
 - Hver tekst skal ha 1-3 kategorier
-- Velg kategoriene som best beskriver tekstens innhold
+- Hvis teksttype er "fortelling" skal "Fortelling" ALLTID være én av kategoriene,
+  i tillegg til relevante tematiske kategorier (f.eks. en fortelling om en katt → ["Dyr", "Fortelling"])
+- "Mat" gjelder KUN mat, drikke og kosthold
+- "Matematikk" gjelder tall, regning, geometri og matematiske begreper — ikke forveksle med Mat
+- "Vitenskap" = naturvitenskapelige fenomener (astronomi, biologi, kjemi, fysikk)
+- "Teknologi" = oppfinnelser, maskiner, ingeniørkunst, dataspill, digitale verktøy
 - Bruk de korte nummerne (1, 2, 3...) som nøkler
 
 Returner KUN et JSON-objekt:
 {
   "assignments": {
-    "1": ["Kategori A", "Kategori B"],
-    "2": ["Kategori C"],
-    ...
+    "1": ["Kategori A", "Fortelling"],
+    "2": ["Kategori B", "Kategori C"]
   }
 }"""
 
 
 def build_assignment_prompt(taxonomy: list, extracted: list[dict], index_to_id: dict) -> str:
-    id_to_index = {v: k for k, v in index_to_id.items()}
-
+    id_to_index  = {v: k for k, v in index_to_id.items()}
     taxonomy_str = "\n".join(f"- {t}" for t in taxonomy)
 
-    text_lines = []
+    lines = []
     for t in extracted:
-        idx = id_to_index.get(t["text_id"], "?")
-        text_lines.append(
-            f'{idx}. Tittel: {t["title"]} | Hovedemne: {t.get("main_topic", "")}'
+        idx  = id_to_index.get(t["text_id"], "?")
+        subs = ", ".join(t.get("sub_topics", []))
+        lines.append(
+            f'{idx}. [{t.get("text_type", "fagtekst")}] '
+            f'Tittel: {t["title"]} | '
+            f'Hovedemne: {t.get("main_topic", "")} | '
+            f'Underemner: {subs}'
         )
 
     return (
         f"Godkjente kategorier:\n{taxonomy_str}\n\n"
-        f"Tekster:\n" + "\n".join(text_lines)
-        + "\n\nTildel hver tekst 1-3 kategorier fra listen ovenfor."
+        f"Tekster:\n" + "\n".join(lines)
+        + "\n\nTildel hver tekst 1-3 kategorier. "
+        + "Fortellinger skal alltid ha 'Fortelling' som en av kategoriene."
     )
 
 
 def assign_texts(client: Groq, taxonomy: list, extracted: list[dict]) -> dict:
-    """Assign each text to 1-3 broad topics from the finalized taxonomy."""
     index_to_id = {str(i): t["text_id"] for i, t in enumerate(extracted, start=1)}
     prompt      = build_assignment_prompt(taxonomy, extracted, index_to_id)
 
@@ -596,17 +676,25 @@ def assign_texts(client: Groq, taxonomy: list, extracted: list[dict]) -> dict:
             raw = re.sub(r'^```[a-z]*\n?', '', raw)
             raw = re.sub(r'\n?```$', '', raw)
 
-            result      = json.loads(raw)
             assignments = validate_assignments(
-                result.get("assignments", {}), taxonomy, index_to_id
+                json.loads(raw).get("assignments", {}), taxonomy, index_to_id
             )
 
-            # Warn about unassigned texts
-            assigned_ids = set(assignments.keys())
-            all_ids      = {t["text_id"] for t in extracted}
-            missing      = all_ids - assigned_ids
+            missing = {t["text_id"] for t in extracted} - set(assignments.keys())
             if missing:
-                print(f"  [!] {len(missing)} texts were not assigned — they will have empty broad_topics.")
+                print(f"  [!] {len(missing)} texts not assigned.")
+
+            missing_tag = [
+                t["title"] for t in extracted
+                if t.get("text_type") == "fortelling"
+                and "Fortelling" not in assignments.get(t["text_id"], [])
+            ]
+            if missing_tag:
+                print(f"  [!] {len(missing_tag)} stories missing Fortelling tag:")
+                for title in missing_tag[:5]:
+                    print(f"      - {title}")
+                if len(missing_tag) > 5:
+                    print(f"      ... and {len(missing_tag) - 5} more")
 
             return assignments
 
@@ -618,12 +706,218 @@ def assign_texts(client: Groq, taxonomy: list, extracted: list[dict]) -> dict:
         if attempt < MAX_RETRIES:
             time.sleep(RETRY_DELAY * attempt)
 
-    raise RuntimeError("Assignment failed after all retries.")
+    raise RuntimeError("Assignment failed.")
 
 
-# ─────────────────────────────────────────────
-# STAGE 5 — EXPORT
-# ─────────────────────────────────────────────
+# ── Stage 4.5: Assignment quality check ──────────────────────────────────────
+
+def run_assignment_quality_check(
+    extracted: list[dict],
+    taxonomy: list,
+    assignments: dict,
+    output_path: str,
+) -> dict:
+    text_map       = {t["text_id"]: t for t in extracted}
+    category_texts = {cat: [] for cat in taxonomy}
+
+    for text_id, cats in assignments.items():
+        t = text_map.get(text_id)
+        if not t:
+            continue
+        for cat in cats:
+            if cat in category_texts:
+                category_texts[cat].append(t)
+
+    print(f"\n  {'─'*50}")
+    print(f"  ASSIGNMENT DISTRIBUTION")
+    print(f"  {'─'*50}")
+
+    thin    = []
+    bloated = []
+    rows    = []
+
+    for cat in taxonomy:
+        texts = category_texts[cat]
+        count = len(texts)
+        flag  = ""
+
+        if count < THIN_CATEGORY_THRESHOLD:
+            flag = "  ← thin"
+            thin.append(cat)
+        elif count > BLOATED_CATEGORY_THRESHOLD:
+            flag = "  ← broad"
+            bloated.append(cat)
+
+        print(f"  {cat:<20} {count:>4} texts{flag}")
+
+        sample = random.sample(texts, min(CATEGORY_SPOT_SIZE, count))
+        for t in sample:
+            rows.append({
+                "category":            cat,
+                "text_id":             t["text_id"],
+                "title":               t["title"],
+                "text_type":           t.get("text_type", ""),
+                "main_topic":          t.get("main_topic", ""),
+                "sub_topics":          " | ".join(t.get("sub_topics", [])),
+                "assigned_categories": " | ".join(assignments.get(t["text_id"], [])),
+                "relevence":           "",
+                "correct_category(if not primary)": "",
+                "notes":               "",
+            })
+
+    if thin:
+        print(f"\n  Thin (< {THIN_CATEGORY_THRESHOLD}): {', '.join(thin)}")
+    if bloated:
+        print(f"  Broad (> {BLOATED_CATEGORY_THRESHOLD}): {', '.join(bloated)}")
+
+    if not os.path.exists(output_path):
+        pd.DataFrame(rows).to_csv(output_path, index=False, encoding="utf-8-sig")
+        print(f"\n  Spot check saved → {output_path}")
+        print(f"  Fill in 'relevence' column: primary / secondary / wrong")
+        print(f"  Then run --evaluate --compare")
+    else:
+        print(f"\n  {output_path} already exists — skipping overwrite.")
+
+    return {
+        "category_counts":    {cat: len(texts) for cat, texts in category_texts.items()},
+        "thin_categories":    thin,
+        "bloated_categories": bloated,
+    }
+
+
+# ── Evaluation ────────────────────────────────────────────────────────────────
+
+def compute_extraction_metrics(df: pd.DataFrame) -> dict:
+    labeled = df[df["correct"].str.strip().str.lower().isin(["yes", "no"])]
+    if len(labeled) == 0:
+        return {"error": "No labeled rows found"}
+
+    total    = len(labeled)
+    correct  = (labeled["correct"].str.strip().str.lower() == "yes").sum()
+    accuracy = round(correct / total, 3)
+
+    result = {"extraction_accuracy": accuracy, "correct": int(correct), "total": total}
+
+    if "text_type_manual" in labeled.columns:
+        type_labeled = labeled[labeled["text_type_manual"].str.strip() != ""]
+        if len(type_labeled) > 0:
+            type_correct = (
+                type_labeled["text_type_llm"].str.strip() ==
+                type_labeled["text_type_manual"].str.strip()
+            ).sum()
+            result["text_type_accuracy"] = round(type_correct / len(type_labeled), 3)
+            result["text_type_total"]    = len(type_labeled)
+
+    return result
+
+
+def compute_assignment_metrics(df: pd.DataFrame) -> dict:
+    col     = "relevence"
+    labeled = df[df[col].str.strip().str.lower().isin(["primary", "secondary", "wrong"])]
+
+    if len(labeled) == 0:
+        return {"error": "No labeled rows found — fill in 'relevence' column first"}
+
+    total     = len(labeled)
+    primary   = int((labeled[col].str.strip().str.lower() == "primary").sum())
+    secondary = int((labeled[col].str.strip().str.lower() == "secondary").sum())
+    wrong     = int((labeled[col].str.strip().str.lower() == "wrong").sum())
+
+    per_category = {}
+    for cat, group in labeled.groupby("category"):
+        gp = int((group[col].str.strip().str.lower() == "primary").sum())
+        gs = int((group[col].str.strip().str.lower() == "secondary").sum())
+        gw = int((group[col].str.strip().str.lower() == "wrong").sum())
+        gt = len(group)
+        per_category[cat] = {
+            "primary":              gp,
+            "secondary":            gs,
+            "wrong":                gw,
+            "total":                gt,
+            "primary_precision":    round(gp / gt, 3),
+            "acceptable_precision": round((gp + gs) / gt, 3),
+        }
+
+    return {
+        "total_rated":          total,
+        "primary":              primary,
+        "secondary":            secondary,
+        "wrong":                wrong,
+        "primary_precision":    round(primary / total, 3),
+        "acceptable_precision": round((primary + secondary) / total, 3),
+        "per_category":         per_category,
+    }
+
+
+def run_evaluation(compare: bool = False):
+    if not compare:
+        print("\nFill in evaluation files and re-run with --compare")
+        return
+
+    metrics = {}
+
+    if os.path.exists(EVAL_SAMPLE_CSV):
+        df = pd.read_csv(EVAL_SAMPLE_CSV, dtype=str).fillna("")
+        if "correct" in df.columns:
+            print("\n[Evaluation] Extraction metrics")
+            metrics["extraction"] = compute_extraction_metrics(df)
+            m = metrics["extraction"]
+            if "error" not in m:
+                print(f"  Accuracy:        {m['extraction_accuracy']:.1%}  ({m['correct']}/{m['total']})")
+                if "text_type_accuracy" in m:
+                    print(f"  Text type:       {m['text_type_accuracy']:.1%}")
+        else:
+            print(f"\n  {EVAL_SAMPLE_CSV}: no 'correct' column found")
+    else:
+        print(f"\n  {EVAL_SAMPLE_CSV} not found")
+
+    if os.path.exists(ASSIGNMENT_EVAL_CSV):
+        df = pd.read_csv(ASSIGNMENT_EVAL_CSV, dtype=str).fillna("")
+        if "relevence" in df.columns:
+            print("\n[Evaluation] Assignment metrics")
+            metrics["assignment"] = compute_assignment_metrics(df)
+            m = metrics["assignment"]
+            if "error" in m:
+                print(f"  {m['error']}")
+            else:
+                print(f"  Total rated:          {m['total_rated']}")
+                print(f"  Primary precision:    {m['primary_precision']:.1%}  ({m['primary']} texts)")
+                print(f"  Acceptable precision: {m['acceptable_precision']:.1%}  ({m['primary'] + m['secondary']} texts)")
+                print(f"  Wrong:                {m['wrong']} texts")
+                print(f"\n  {'Category':<20} {'Primary':>8} {'Secondary':>10} {'Wrong':>6} {'Acceptable':>11}")
+                print(f"  {'─'*58}")
+                for cat, cm in m.get("per_category", {}).items():
+                    print(
+                        f"  {cat:<20} {cm['primary']:>8} {cm['secondary']:>10} "
+                        f"{cm['wrong']:>6} {cm['acceptable_precision']:>10.0%}"
+                    )
+
+                secondary_rows = df[df["relevence"].str.strip().str.lower() == "secondary"]
+                if len(secondary_rows) > 0:
+                    corrections = [
+                        (row["category"], row["title"], row.get("correct_category(if not primary)", ""))
+                        for _, row in secondary_rows.iterrows()
+                        if str(row.get("correct_category(if not primary)", "")).strip()
+                    ]
+                    if corrections:
+                        print(f"\n  Secondary assignments with suggested corrections:")
+                        for cat, title, better in corrections:
+                            print(f"    {cat:<20} {title[:35]} → {better}")
+        else:
+            print(f"\n  {ASSIGNMENT_EVAL_CSV}: no 'relevence' column found")
+    else:
+        print(f"\n  {ASSIGNMENT_EVAL_CSV} not found")
+
+    save_json(EVAL_METRICS_JSON, metrics)
+    if "extraction" in metrics:
+        save_json(EVAL_EXTRACTION_METRICS_JSON, metrics["extraction"])
+    if "assignment" in metrics:
+        save_json(EVAL_ASSIGNMENT_METRICS_JSON, metrics["assignment"])
+
+    print(f"\n  Saved → {EVAL_METRICS_JSON}")
+
+
+# ── Stage 5: Export ───────────────────────────────────────────────────────────
 
 def export_results(extracted: list[dict], taxonomy: list, assignments: dict, output_path: str):
     rows = []
@@ -633,146 +927,152 @@ def export_results(extracted: list[dict], taxonomy: list, assignments: dict, out
             "text_id":          t["text_id"],
             "serial_number":    t["serial"],
             "title":            t["title"],
+            "text_type":        t.get("text_type", ""),
             "main_topic":       t.get("main_topic", ""),
             "sub_topics":       " | ".join(t.get("sub_topics", [])),
             "broad_topics":     " | ".join(broad),
             "extraction_error": t.get("extraction_error", ""),
         })
 
-    df = pd.DataFrame(rows)
-    df.to_csv(output_path, index=False, encoding="utf-8-sig")
+    pd.DataFrame(rows).to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"  CSV → {output_path}")
 
-    # Save assignments JSON artifact
-    save_json(ASSIGNMENTS_JSON, {
-        "taxonomy":    taxonomy,
-        "assignments": assignments,
-    })
+    save_json(ASSIGNMENTS_JSON, {"taxonomy": taxonomy, "assignments": assignments})
     print(f"  Assignments → {ASSIGNMENTS_JSON}")
 
-    # Print summary
-    print(f"\n{'─'*56}")
-    print(f"  FINAL BROAD TOPICS ({len(taxonomy)}):")
-    print(f"{'─'*56}")
+    print(f"\n  {'─'*50}")
+    print(f"  BROAD TOPICS ({len(taxonomy)})")
+    print(f"  {'─'*50}")
     for topic in taxonomy:
         count = sum(1 for r in rows if topic in r["broad_topics"].split(" | "))
-        print(f"  {topic:44s}  ({count} texts)")
+        print(f"  {topic:<25} {count} texts")
+
+    stories = [r for r in rows if r.get("text_type") == "fortelling"]
+    tagged  = [r for r in stories if "Fortelling" in r["broad_topics"].split(" | ")]
+    print(f"\n  Fortelling coverage: {len(tagged)}/{len(stories)}")
 
     errors = [r for r in rows if r["extraction_error"]]
     if errors:
-        print(f"\n  [!] {len(errors)} extraction errors:")
+        print(f"\n  Extraction errors ({len(errors)}):")
         for e in errors:
-            print(f"      - {e['title']}")
+            print(f"    - {e['title']}")
 
 
-# ─────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract and cluster topics from Norwegian children's texts."
-    )
-    parser.add_argument("--input",           required=True, help="Path to input TSV/CSV")
-    parser.add_argument("--output",          default=OUTPUT_CSV, help=f"Output CSV (default: {OUTPUT_CSV})")
+    parser = argparse.ArgumentParser(description="Topic pipeline for Norwegian children's texts.")
+    parser.add_argument("--input",           required=True)
+    parser.add_argument("--output",          default=OUTPUT_CSV)
     parser.add_argument("--skip-extraction", action="store_true",
-                        help="Skip extraction, load from checkpoint. Re-proposes taxonomy.")
+                        help="Skip extraction, reload from checkpoint, re-propose taxonomy.")
     parser.add_argument("--assign-only",     action="store_true",
-                        help="Skip extraction + taxonomy proposal. Loads taxonomy_final.json and assigns texts.")
+                        help="Skip extraction and taxonomy. Load taxonomy_final.json and assign.")
+    parser.add_argument("--evaluate",        action="store_true",
+                        help="Compute evaluation metrics from labeled CSV files.")
+    parser.add_argument("--compare",         action="store_true",
+                        help="Use with --evaluate to compute and print metrics.")
     args = parser.parse_args()
 
-    api_key = "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"
+    load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
+    if args.evaluate:
+        run_evaluation(compare=args.compare)
+        return
+
+    api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        print("Error: GROQ_API_KEY not set.")
-        print("  export GROQ_API_KEY=gsk_your_key_here")
+        print("GROQ_API_KEY not set. Add it to your .env file.")
         sys.exit(1)
 
     client = Groq(api_key=api_key)
-    print(f"  Model: {MODEL}")
+    print(f"  Model: {MODEL}\n")
 
-    # ── Stage 1: Load & Preprocess ───────────────────────────
-    print("\n[Stage 1] Loading and preprocessing...")
+    # Stage 1
+    print("[Stage 1] Preprocessing...")
     texts = load_and_preprocess(args.input)
 
-    # ── Stage 2: Extraction ──────────────────────────────────
+    # Stage 2
     if args.skip_extraction or args.assign_only:
-        print("\n[Stage 2] Loading extracted topics from checkpoint...")
+        print("\n[Stage 2] Loading extracted topics...")
         if os.path.exists(EXTRACTED_JSON):
-            raw_extracted = load_json(EXTRACTED_JSON)
-            # Merge clean_body back from preprocessing (needed for assignment prompt)
-            text_map  = {t["text_id"]: t for t in texts}
-            extracted = []
-            for e in raw_extracted:
-                tid = e.get("text_id", "")
-                if tid in text_map:
-                    extracted.append({**text_map[tid], **e})
+            raw  = load_json(EXTRACTED_JSON)
+            tmap = {t["text_id"]: t for t in texts}
+            extracted = [{**tmap[e["text_id"]], **e} for e in raw if e.get("text_id") in tmap]
         else:
-            checkpoint = load_checkpoint()
-            valid_ids  = {t["text_id"] for t in texts}
-            extracted  = [v for k, v in checkpoint.items() if k in valid_ids]
+            ckpt      = load_checkpoint()
+            valid_ids = {t["text_id"] for t in texts}
+            extracted = [v for k, v in ckpt.items() if k in valid_ids]
         print(f"  Loaded {len(extracted)} texts.")
     else:
         print(f"\n[Stage 2] Extracting topics ({len(texts)} texts)...")
         extracted = run_extraction(client, texts)
+        print(f"\n[Stage 2.5] Extraction quality check...")
+        run_extraction_quality_check(extracted)
 
-    # ── Stage 3: Taxonomy Proposal ───────────────────────────
+    # Stage 3
     if args.assign_only:
-        # Load finalized taxonomy directly
         if not os.path.exists(FINAL_JSON):
             print(f"\nError: {FINAL_JSON} not found.")
-            print(f"  Run without --assign-only first to generate a draft taxonomy.")
-            print(f"  Then copy {DRAFT_JSON} → {FINAL_JSON} and edit as needed.")
             sys.exit(1)
-        final_data = load_json(FINAL_JSON)
-        taxonomy   = final_data.get("broad_topics", [])
-        print(f"\n[Stage 3] Loaded finalized taxonomy ({len(taxonomy)} categories) from {FINAL_JSON}")
-
+        taxonomy = load_json(FINAL_JSON).get("broad_topics", [])
+        print(f"\n[Stage 3] Loaded taxonomy ({len(taxonomy)} categories) from {FINAL_JSON}")
     else:
-        print(f"\n[Stage 3] Proposing draft taxonomy from normalized topic labels...")
+        print(f"\n[Stage 3] Proposing taxonomy...")
         draft = propose_taxonomy(client, extracted)
-
-        # Save draft for researcher review
         save_json(DRAFT_JSON, draft)
 
-        print(f"\n  Draft taxonomy saved → {DRAFT_JSON}")
-        print(f"\n  {'─'*54}")
-        print(f"  DRAFT BROAD TOPICS ({len(draft['broad_topics'])}):")
-        print(f"  {'─'*54}")
+        print(f"\n  Saved → {DRAFT_JSON}")
+        print(f"\n  {'─'*50}")
+        print(f"  DRAFT TAXONOMY ({len(draft['broad_topics'])} categories)")
+        print(f"  {'─'*50}")
         for topic in draft["broad_topics"]:
             rationale = draft.get("rationale", {}).get(topic, "")
             print(f"  • {topic}")
             if rationale:
-                print(f"    → {rationale}")
+                print(f"    {rationale}")
+
+        print(f"\n[Stage 3.5] Gap analysis...")
+        gaps = run_gap_analysis(client, extracted, draft["broad_topics"])
+        print_gap_analysis(gaps)
 
         print(f"""
-  ╔══════════════════════════════════════════════════════╗
-  ║  RESEARCHER REVIEW STEP                              ║
-  ║                                                      ║
-  ║  1. Open: {DRAFT_JSON:<42s}║
-  ║  2. Review the proposed broad_topics list            ║
-  ║     - Merge overlapping categories                   ║
-  ║     - Rename categories to better fit your thesis    ║
-  ║     - Add or remove categories as needed             ║
-  ║  3. Save your edited version as: {FINAL_JSON:<19s}║
-  ║  4. Re-run with:                                     ║
-  ║       python topic_pipeline.py \\                     ║
-  ║         --input {Path(args.input).name:<38s}║
-  ║         --assign-only                                ║
-  ╚══════════════════════════════════════════════════════╝
+  Next steps:
+  1. Open {DRAFT_JSON}
+  2. Review categories and gaps above
+     - Add missing categories
+     - Remove overlapping ones
+     - Rename as needed
+  3. Save as {FINAL_JSON}
+  4. Run: python {Path(__file__).name} --input {Path(args.input).name} --assign-only
 """)
-        print("  Pipeline paused. Edit the taxonomy and re-run with --assign-only.")
-        return  # ← deliberate pause
+        return
 
-    # ── Stage 4: Assignment ──────────────────────────────────
-    print(f"\n[Stage 4] Assigning texts to finalized taxonomy...")
+    # Stage 4
+    print(f"\n[Stage 4] Assigning texts...")
     assignments = assign_texts(client, taxonomy, extracted)
-    print(f"  Assigned {len(assignments)}/{len(extracted)} texts.")
+    print(f"  {len(assignments)}/{len(extracted)} texts assigned.")
 
-    # ── Stage 5: Export ──────────────────────────────────────
-    print(f"\n[Stage 5] Exporting results...")
+    # Stage 4.5
+    print(f"\n[Stage 4.5] Assignment quality check...")
+    quality = run_assignment_quality_check(extracted, taxonomy, assignments, ASSIGNMENT_EVAL_CSV)
+
+    if quality["thin_categories"] or quality["bloated_categories"]:
+        print(f"""
+  Options:
+  A) Edit {FINAL_JSON} and re-run --assign-only
+  B) Manually fix assignments in results.csv
+  C) Accept as-is
+""")
+
+    # Stage 5
+    print(f"\n[Stage 5] Exporting...")
     export_results(extracted, taxonomy, assignments, args.output)
 
-    print("\nDone! ✓")
+    print(f"""
+  Fill in {ASSIGNMENT_EVAL_CSV} (relevence: primary/secondary/wrong)
+  then run: python {Path(__file__).name} --input {Path(args.input).name} --evaluate --compare
+""")
 
 
 if __name__ == "__main__":
