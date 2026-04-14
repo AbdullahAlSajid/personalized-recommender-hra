@@ -1,4 +1,6 @@
-const BACKEND = 'http://localhost:8000';
+/// <reference types="vite/client" />
+
+const BACKEND = import.meta.env.VITE_BACKEND_URL as string;
 
 // The session_id lives exclusively in an HttpOnly cookie managed by the
 // backend. JS never reads or stores it. All requests use credentials: 'include'
