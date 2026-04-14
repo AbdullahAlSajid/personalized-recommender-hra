@@ -1,21 +1,6 @@
-import { useEffect } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router";
 
 export function Layout() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Cross-tab coordination: if another tab ends the session (removes
-    // recsys_session_id from localStorage), redirect this tab to home.
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'recsys_session_id' && e.newValue === null) {
-        navigate('/');
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [navigate]);
-
   return (
     <div className="min-h-screen w-full relative overflow-x-hidden font-sans text-[#2d3142] bg-[#faf8f5]">
       {/* Background Blobs */}

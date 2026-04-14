@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
@@ -36,8 +36,6 @@ export function Interests() {
   };
 
   const handleContinue = () => {
-    // Persist to localStorage for use in recommendations
-    localStorage.setItem("recsys_interests", JSON.stringify([...selected]));
     navigate("/dashboard");
   };
 

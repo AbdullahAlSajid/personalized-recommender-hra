@@ -13,8 +13,9 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3001",
     ],
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*", "X-Session-Id"],
+    allow_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)

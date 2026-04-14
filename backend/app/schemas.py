@@ -7,7 +7,7 @@ class ValidatePasscodeRequest(BaseModel):
 
 
 class ValidatePasscodeResponse(BaseModel):
-    valid: bool
+    token: str  # one-time token to be sent to /start
 
 
 class CreateSessionResponse(BaseModel):
@@ -22,3 +22,7 @@ class EndSessionResponse(BaseModel):
 
 class SessionStatusResponse(BaseModel):
     active: bool
+
+
+class StartSessionRequest(BaseModel):
+    token: str = Field(..., min_length=1)

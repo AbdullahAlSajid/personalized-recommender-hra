@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/Button';
 import {
@@ -11,8 +11,10 @@ import { checkSessionStatus, validatePasscode } from '../lib/session';
 
 export function Passcode() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const expiredMessage: string = (location.state as { expiredMessage?: string })?.expiredMessage ?? '';
   const [code, setCode] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(expiredMessage);
   const [loading, setLoading] = useState(false);
   // True while we check for an existing session — prevents flashing the form.
   const [checking, setChecking] = useState(true);
@@ -20,15 +22,14 @@ export function Passcode() {
   useEffect(() => {
     checkSessionStatus().then((active) => {
       if (active) {
-        const hasInterests = localStorage.getItem('recsys_interests');
-        navigate(hasInterests ? '/dashboard' : '/interests', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setChecking(false);
       }
     });
   }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (code.length !== 6 || loading) return;
 
@@ -36,9 +37,9 @@ export function Passcode() {
     setLoading(true);
 
     try {
-      await validatePasscode(code);
-      // Passcode valid — no DB write yet, proceed to consent
-      navigate('/consent');
+      const token = await validatePasscode(code);
+      // Passcode stays here — only the one-time token travels to Consent
+      navigate('/consent', { state: { token } });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ugyldig kode. Prøv igjen.');
     } finally {
@@ -65,7 +66,7 @@ export function Passcode() {
               <InputOTP
                 maxLength={6}
                 value={code}
-                onChange={(val) => {
+                onChange={(val: string) => {
                   setCode(val);
                   setError('');
                 }}

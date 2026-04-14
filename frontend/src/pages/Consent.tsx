@@ -1,34 +1,40 @@
 import React, { useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/Button';
-import { startSession, getSessionId } from '../lib/session';
+import { startSession, TokenExpiredError } from '../lib/session';
 
 export function Consent() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const token: string = (location.state as { token?: string })?.token ?? '';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // useRef guard prevents a second /start call if the user double-clicks
-  // or navigates back and clicks again before the first resolves.
   const inFlight = useRef(false);
 
+  // If the user lands here without a token (e.g. direct URL), send them back.
+  if (!token) {
+    navigate('/', { replace: true });
+    return null;
+  }
+
   const handleConsent = async () => {
-    // Session already started (e.g. user navigated back) — skip /start.
-    if (getSessionId()) {
-      navigate('/interests');
-      return;
-    }
     if (inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
     setError('');
 
     try {
-      await startSession();
+      await startSession(token);
       navigate('/interests');
-    } catch {
-      setError('Kunne ikke koble til serveren. Prøv igjen.');
-      inFlight.current = false;
+    } catch (err) {
+      if (err instanceof TokenExpiredError) {
+        // Token expired (user sat on this page > 5 min) — must re-enter passcode.
+        navigate('/', { replace: true, state: { expiredMessage: 'Sesjonen utløpte. Skriv inn koden på nytt.' } });
+      } else {
+        setError('Kunne ikke koble til serveren. Prøv igjen.');
+        inFlight.current = false;
+      }
     } finally {
       setLoading(false);
     }
