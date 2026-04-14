@@ -60,6 +60,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "serve -s build -l 3000"
+    "start": "serve -s build -l 3001"
   }
 }
