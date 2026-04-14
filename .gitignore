@@ -17,7 +17,6 @@ downloads/
 eggs/
 .eggs/
 frontend/node_modules/
-lib/
 lib64/
 parts/
 sdist/
