@@ -12,7 +12,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
-        "http://44.192.27.80:3001"
+        "http://44.192.27.80:3001",
+        "http://localhost",
+        "http://44.192.27.80"
     ],
     allow_credentials=True,
     allow_methods=["*"],

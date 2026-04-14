@@ -1,6 +1,6 @@
 
 //const BACKEND = 'http://localhost:8000';
-const BACKEND =   'http://44.192.27.80:8000'   
+const BACKEND = import.meta.env.VITE_BACKEND_URL as string;
 
 
 // The session_id lives exclusively in an HttpOnly cookie managed by the
