@@ -76,7 +76,6 @@ Your task:
 3. Evaluate reading difficulty for children aged 9-11.
 4. Score the text on six dimensions from 1 to 5.
 5. Give an overall difficulty score and an anchor suitability score.
-6. Estimate which age within 8-12 this text best fits.
 
 Scoring scale:
   1 = very easy / very low demand
@@ -109,7 +108,6 @@ Return ONLY valid JSON. No markdown. No explanation outside the JSON.
 
 EVALUATION_SCHEMA = {
     "english_summary": "string",
-    "estimated_age_fit": "string (e.g. '8-9', '10', '11-12')",
     "manual_vocab_difficulty_1to5": 0,
     "manual_sentence_complexity_1to5": 0,
     "manual_abstractness_1to5": 0,
@@ -445,7 +443,7 @@ def main():
     args = parser.parse_args()
 
     load_dotenv(Path(__file__).parent.parent.parent / ".env")
-    api_key = "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"
+    api_key = "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"
     if not api_key:
         print("Error: GROQ_API_KEY not set. Add it to your .env file.")
         sys.exit(1)
