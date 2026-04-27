@@ -1,18 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router';
 import { TopBar } from '../components/ui/TopBar';
 import { Button } from '../components/ui/Button';
-import { endSession } from '../lib/session';
 
 export function Completion() {
   const navigate = useNavigate();
-  const ended = useRef(false);
-
-  useEffect(() => {
-    if (ended.current) return;
-    ended.current = true;
-    endSession(); // fire-and-forget; clears cookie + flag
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,13 +29,6 @@ export function Completion() {
             >
               Finn en ny tekst
             </Button>
-
-            <button
-              className="text-[#5d6875] hover:text-[#f4a261] underline underline-offset-4 transition-colors"
-              onClick={() => navigate('/')}
-            >
-              Jeg vil ikke lese mer nå.
-            </button>
           </div>
 
         </div>

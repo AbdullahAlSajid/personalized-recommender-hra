@@ -7,6 +7,7 @@ import { Interests } from "./pages/Interests";
 import { Dashboard } from "./pages/Dashboard";
 import { Reading } from "./pages/Reading";
 import { Completion } from "./pages/Completion";
+import { SessionFeedback } from "./pages/SessionFeedback";
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: "dashboard", Component: Dashboard },
       { path: "reading/:id", Component: Reading },
       { path: "completion", Component: Completion },
+      { path: "session-feedback", Component: SessionFeedback },
     ],
   },
 ]);

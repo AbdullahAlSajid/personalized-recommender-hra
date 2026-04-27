@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(.venv/Scripts/python -c ':*)",
-      "Bash(curl -s -X POST http://127.0.0.1:8000/sessions/start -H \"Content-Type: application/json\" -d \"{\\\\\"passcode\\\\\": \\\\\"123456\\\\\"}\")",
-      "Bash(curl -s -X POST http://127.0.0.1:8000/sessions/start -H \"Content-Type: application/json\" -d \"{\\\\\"passcode\\\\\": \\\\\"000000\\\\\"}\")"
-    ]
-  }
-}

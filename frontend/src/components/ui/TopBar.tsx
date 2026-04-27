@@ -1,14 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { LogOut } from 'lucide-react';
-import { endSession } from '../../lib/session';
 
 export function TopBar() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await endSession();
-    navigate('/');
+    navigate('/session-feedback');
   };
 
   return (

@@ -66,7 +66,7 @@
 
 @layer theme {
   :root, :host {
-    --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-sans: "ABeeZee", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --color-black: #000;
     --color-white: #fff;
@@ -218,15 +218,30 @@
   ol, ul, menu {
     list-style: none;
   }
-
-  img, svg, video, canvas, audio, iframe, embed, object {
-    vertical-align: middle;
+  
+  /* Media elements: make them block-level so they don't create baseline gaps. */
+  img, video, canvas, audio, iframe, embed, object {
     display: block;
+  }
+
+  /* Inline icons (common in buttons/labels): allow vertical alignment. */
+  svg {
+    display: inline-block;
+    vertical-align: middle;
   }
 
   img, video {
     max-width: 100%;
     height: auto;
+  }
+  
+  .no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   button, input, select, optgroup, textarea {
@@ -578,6 +593,7 @@
   }
 
   .line-clamp-3 {
+    line-clamp: 3;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     display: -webkit-box;
