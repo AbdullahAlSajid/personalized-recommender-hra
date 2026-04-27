@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
+COPY recommender/ ./recommender/
+
 # Expose the port uvicorn will listen on
 EXPOSE 8000
 
