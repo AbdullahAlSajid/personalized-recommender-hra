@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 import html
 import re
+from pathlib import Path
 from urllib.parse import quote
 from typing import Any, List, Optional
 
@@ -41,6 +42,8 @@ from recommender.recommender.engine import (
 # ════════════════════════════════════════════════════════════
 
 _texts_cache: Optional[pd.DataFrame] = None
+_images_dir = Path(__file__).resolve().parents[2] / "data" / "images"
+_thumbs_dir = _images_dir / "thumbs"
 
 
 def _normalize_preview_text(value: str) -> str:
@@ -220,6 +223,27 @@ def _to_safe_image_name(value: object) -> str | None:
     return text or None
 
 
+def _build_image_url(name: str, *, prefer_thumbnail: bool = False) -> str:
+    encoded = quote(name)
+    if prefer_thumbnail:
+      return f"/images/thumbs/{encoded}"
+    return f"/images/{encoded}"
+
+
+def _choose_preview_image_url(values: object) -> str | None:
+    candidates = [
+        name for name in (_to_safe_image_name(value) for value in (values or [])) if name
+    ]
+    if not candidates:
+        return None
+
+    for name in candidates:
+        if (_thumbs_dir / name).is_file():
+            return _build_image_url(name, prefer_thumbnail=True)
+
+    return _build_image_url(candidates[0])
+
+
 def load_texts(db: DBSession) -> pd.DataFrame:
     """Load reliable texts from DB into a cached DataFrame."""
     global _texts_cache
@@ -294,13 +318,7 @@ def load_texts(db: DBSession) -> pd.DataFrame:
     df["image_file_names_list"] = df["image_file_names_array"].apply(
         lambda x: list(x) if x else []
     )
-    df["first_image_url"] = df["first_image_file_name"].apply(
-        lambda x: (
-            f"/images/{quote(safe_name)}"
-            if (safe_name := _to_safe_image_name(x))
-            else None
-        )
-    )
+    df["first_image_url"] = df["image_file_names_list"].apply(_choose_preview_image_url)
     df["sub_topics_list"] = [[] for _ in range(len(df))]
     if "broad_topics_array" in df.columns:
         df = df.drop(columns=["broad_topics_array"])
