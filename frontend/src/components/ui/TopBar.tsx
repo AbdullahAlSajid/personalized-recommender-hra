@@ -62,7 +62,7 @@ export function TopBar() {
       <div className="flex items-center justify-between px-8 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm border-b border-[#e0ddd5]">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#4ecdc4] to-[#95b8a2] bg-clip-text text-transparent">
-            rec•sys
+            Lesesystemet
           </h1>
         </div>
 
