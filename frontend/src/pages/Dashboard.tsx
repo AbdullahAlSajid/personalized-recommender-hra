@@ -133,7 +133,7 @@ function RecommendationSection({
                   const selectedId = book.text_id;
                   if (typeof selectedId === 'string' && selectedId.length > 0) {
                     void logSessionEvent({
-                      event_type: 'dashboard_text_clicked',
+                      event_type: 'dashboard_text_selected',
                       text_id: selectedId,
                       metadata: {
                         card_index: index,

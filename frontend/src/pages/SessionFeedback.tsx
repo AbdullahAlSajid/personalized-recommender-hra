@@ -15,6 +15,8 @@ import {
 type FeedbackStepKey = "q1" | "q2" | "favorite" | "favoriteWhy" | "submit";
 type QuestionStepKey = Exclude<FeedbackStepKey, "submit">;
 
+const FAVORITE_NONE = "__none__";
+
 export function SessionFeedback() {
   const navigate = useNavigate();
 
@@ -53,11 +55,17 @@ export function SessionFeedback() {
   const canSubmit =
     q1 !== "" &&
     q2 !== "" &&
-    (favoriteOptions.length === 0 || (favoriteTextId !== "" && favoriteWhy !== ""));
+    (favoriteOptions.length === 0 ||
+      (favoriteTextId !== "" &&
+        (favoriteTextId === FAVORITE_NONE || favoriteWhy !== "")));
 
   const steps: FeedbackStepKey[] = useMemo(() => {
     const out: FeedbackStepKey[] = ["q1", "q2", "favorite"];
-    if (favoriteOptions.length > 0 && favoriteTextId !== "") {
+    if (
+      favoriteOptions.length > 0 &&
+      favoriteTextId !== "" &&
+      favoriteTextId !== FAVORITE_NONE
+    ) {
       out.push("favoriteWhy");
     }
     out.push("submit");
@@ -109,13 +117,17 @@ export function SessionFeedback() {
   const handleFinish = async () => {
     if (!canSubmit) return;
 
+    const favoriteTextIdPayload =
+      favoriteTextId === FAVORITE_NONE ? null : favoriteTextId || null;
+    const favoriteWhyPayload = favoriteTextIdPayload ? favoriteWhy || null : null;
+
     setSubmitting(true);
     try {
       await submitSessionFeedback({
         q1: Number.parseInt(q1, 10),
         q2,
-        favorite_text_id: favoriteTextId || null,
-        favorite_why: favoriteWhy || null,
+        favorite_text_id: favoriteTextIdPayload,
+        favorite_why: favoriteWhyPayload,
       });
 
       await endSession();
@@ -186,11 +198,10 @@ export function SessionFeedback() {
                         onChange={setQ1}
                         className="mb-8"
                         options={[
-                          { value: "1", label: "1 — Nesten ingen av tekstene" },
-                          { value: "2", label: "2 — Noen av tekstene" },
-                          { value: "3", label: "3 — Omtrent halvparten" },
-                          { value: "4", label: "4 — De fleste tekstene" },
-                          { value: "5", label: "5 — Alle eller nesten alle tekstene" },
+                          { value: "1", label: "Nesten ingen av tekstene" },
+                          { value: "2", label: "Noen av tekstene" },
+                          { value: "4", label: "De fleste tekstene" },
+                          { value: "5", label: "Alle tekstene" },
                         ]}
                       />
                     </div>
@@ -312,6 +323,43 @@ export function SessionFeedback() {
                               </label>
                             );
                           })}
+                          <label
+                            className={
+                              "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border transition-all duration-200 col-span-2 justify-self-center w-full max-w-[520px] " +
+                              (favoriteTextId === FAVORITE_NONE
+                                ? "border-[#4ecdc4] bg-white shadow-[0_2px_8px_rgba(78,205,196,0.15)]"
+                                : "border-[#e0ddd5] bg-transparent hover:bg-white/50")
+                            }
+                          >
+                            <div
+                              className={
+                                "mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 " +
+                                (favoriteTextId === FAVORITE_NONE
+                                  ? "border-[#4ecdc4]"
+                                  : "border-[#e0ddd5]")
+                              }
+                            >
+                              {favoriteTextId === FAVORITE_NONE && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#4ecdc4]" />
+                              )}
+                            </div>
+
+                            <input
+                              type="radio"
+                              name="feedback-qa"
+                              value={FAVORITE_NONE}
+                              checked={favoriteTextId === FAVORITE_NONE}
+                              onChange={() => {
+                                setFavoriteTextId(FAVORITE_NONE);
+                                setFavoriteWhy("");
+                              }}
+                              className="hidden"
+                            />
+
+                            <span className="text-[#2d3142] font-medium">
+                              Ingen
+                            </span>
+                          </label>
                         </div>
                       )}
                     </div>

@@ -522,11 +522,11 @@ def _get_global_post_reading_questions() -> list[dict[str, Any]]:
             "question_type": "rating_1_5",
             "display_order": None,
             "options": [
-                make_option("1", "1 — Veldig lett", 1),
-                make_option("2", "2 — Ganske lett", 2),
-                make_option("3", "3 — Passe", 3),
-                make_option("4", "4 — Ganske vanskelig", 4),
-                make_option("5", "5 — Veldig vanskelig", 5),
+                make_option("1", "Veldig lett", 1),
+                make_option("2", "Ganske lett", 2),
+                make_option("3", "Passe", 3),
+                make_option("4", "Ganske vanskelig", 4),
+                make_option("5", "Veldig vanskelig", 5),
             ],
         },
         {
@@ -535,11 +535,11 @@ def _get_global_post_reading_questions() -> list[dict[str, Any]]:
             "question_type": "rating_1_5",
             "display_order": None,
             "options": [
-                make_option("1", "1 — Ikke interessant i det hele tatt", 1),
-                make_option("2", "2 — Litt interessant", 2),
-                make_option("3", "3 — Passe interessant", 3),
-                make_option("4", "4 — Ganske interessant", 4),
-                make_option("5", "5 — Veldig interessant", 5),
+                make_option("1", "Ikke interessant i det hele tatt", 1),
+                make_option("2", "Litt interessant", 2),
+                make_option("3", "Passe interessant", 3),
+                make_option("4", "Ganske interessant", 4),
+                make_option("5", "Veldig interessant", 5),
             ],
         },
         {
