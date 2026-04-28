@@ -70,6 +70,61 @@ function resolveImageUrl(firstImageUrl?: string | null): string | null {
   return `${BACKEND_URL}/${firstImageUrl}`;
 }
 
+function resolveThumbnailUrl(url?: string | null): string | null {
+  if (!url) return null;
+
+  try {
+    const resolved = new URL(url, BACKEND_URL);
+    if (
+      !resolved.pathname.startsWith('/images/') ||
+      resolved.pathname.startsWith('/images/thumbs/')
+    ) {
+      return null;
+    }
+
+    resolved.pathname = resolved.pathname.replace('/images/', '/images/thumbs/');
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
+function DashboardImage({
+  src,
+  alt,
+  prioritize = false,
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement> & {
+  prioritize?: boolean;
+}) {
+  const fallbackSrc = src ?? null;
+  const thumbnailSrc = resolveThumbnailUrl(fallbackSrc);
+  const preferredSrc = thumbnailSrc ?? fallbackSrc;
+  const [currentSrc, setCurrentSrc] = useState(preferredSrc ?? '');
+
+  useEffect(() => {
+    setCurrentSrc(preferredSrc ?? '');
+  }, [preferredSrc]);
+
+  if (!fallbackSrc) return null;
+
+  return (
+    <img
+      {...props}
+      src={currentSrc}
+      alt={alt}
+      loading={prioritize ? 'eager' : 'lazy'}
+      fetchPriority={prioritize ? 'high' : 'auto'}
+      decoding="async"
+      onError={() => {
+        if (currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
+
 function RecommendationSection({
   title,
   items,
@@ -87,6 +142,11 @@ function RecommendationSection({
 
       <div className="grid md:grid-cols-2 gap-8">
         {items.map((book, index) => (
+          (() => {
+            const resolvedImageUrl = resolveImageUrl(book.first_image_url);
+            const shouldPrioritize = index < 2;
+
+            return (
           <Card
             key={book.text_id || book.sanity_text_id || index}
             className="overflow-hidden flex flex-col h-full border-2 shadow-md"
@@ -95,12 +155,12 @@ function RecommendationSection({
               className="w-full overflow-hidden bg-[#f3f1eb] shrink-0 border-b"
               style={{ aspectRatio: '4 / 3' }}
             >
-              {resolveImageUrl(book.first_image_url) && (
-                <img
-                  src={resolveImageUrl(book.first_image_url) as string}
+              {resolvedImageUrl && (
+                <DashboardImage
+                  src={resolvedImageUrl}
                   alt={book.title || 'Tekst bilde'}
                   className="w-full h-full"
-                  loading="lazy"
+                  prioritize={shouldPrioritize}
                   style={{ objectFit: 'cover', objectPosition: 'center' }}
                 />
               )}
@@ -154,6 +214,8 @@ function RecommendationSection({
               </Button>
             </div>
           </Card>
+            );
+          })()
         ))}
       </div>
     </section>
