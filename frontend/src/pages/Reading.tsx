@@ -116,6 +116,31 @@ function resolveThumbnailUrl(url?: string | null): string | null {
   }
 }
 
+function enhanceHtmlContentImages(html: string): string {
+  if (!html || typeof window === "undefined") return html;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const images = Array.from(doc.querySelectorAll("img"));
+
+  images.forEach((image, index) => {
+    const rawSrc = image.getAttribute("src");
+    if (!rawSrc) return;
+
+    const resolvedSrc = resolveMarkdownImageSrc(rawSrc);
+    if (!resolvedSrc) return;
+
+    const thumbnailSrc = resolveThumbnailUrl(resolvedSrc);
+    image.setAttribute("src", thumbnailSrc ?? resolvedSrc);
+    image.setAttribute("data-original-src", resolvedSrc);
+    image.setAttribute("loading", index === 0 ? "eager" : "lazy");
+    image.setAttribute("fetchpriority", index === 0 ? "high" : "auto");
+    image.setAttribute("decoding", "async");
+  });
+
+  return doc.body.innerHTML;
+}
+
 function ReadingImage({
   src,
   alt,
@@ -361,6 +386,9 @@ export function Reading() {
     cleanedContent,
     Array.isArray(book.image_urls) ? book.image_urls : []
   );
+  const htmlContent = contentLooksLikeHtml
+    ? enhanceHtmlContentImages(content)
+    : content;
 
   let prioritizedMarkdownImageRendered = false;
   const markdownComponents: Components = {
@@ -485,7 +513,7 @@ export function Reading() {
                   <div
                     className="prose prose-lg prose-slate max-w-none text-[#2d3142] leading-relaxed"
                     style={{ fontSize: "1.25rem", lineHeight: 1.7 }}
-                    dangerouslySetInnerHTML={{ __html: content }}
+                    dangerouslySetInnerHTML={{ __html: htmlContent }}
                   />
                 ) : (
                   <div
