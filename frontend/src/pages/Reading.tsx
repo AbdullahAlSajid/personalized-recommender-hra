@@ -94,6 +94,64 @@ function resolveMarkdownImageSrc(src?: string): string | undefined {
   return `${BACKEND_URL}/images/${encodeURIComponent(fileName)}`;
 }
 
+function resolveThumbnailUrl(url?: string | null): string | null {
+  if (!url || url.startsWith("data:")) return null;
+
+  try {
+    const resolved = new URL(url, BACKEND_URL);
+    if (
+      !resolved.pathname.startsWith("/images/") ||
+      resolved.pathname.startsWith("/images/thumbs/")
+    ) {
+      return null;
+    }
+
+    resolved.pathname = resolved.pathname.replace(
+      "/images/",
+      "/images/thumbs/"
+    );
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
+function ReadingImage({
+  src,
+  alt,
+  prioritize = false,
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement> & {
+  prioritize?: boolean;
+}) {
+  const fallbackSrc = src ?? null;
+  const thumbnailSrc = resolveThumbnailUrl(fallbackSrc);
+  const preferredSrc = thumbnailSrc ?? fallbackSrc;
+  const [currentSrc, setCurrentSrc] = useState(preferredSrc ?? "");
+
+  useEffect(() => {
+    setCurrentSrc(preferredSrc ?? "");
+  }, [preferredSrc]);
+
+  if (!fallbackSrc) return null;
+
+  return (
+    <img
+      {...props}
+      src={currentSrc}
+      alt={alt}
+      loading={prioritize ? "eager" : "lazy"}
+      fetchPriority={prioritize ? "high" : "auto"}
+      decoding="async"
+      onError={() => {
+        if (currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
+
 function fillEmptyMarkdownImageUrls(markdown: string, imageUrls: string[]): string {
   if (!markdown) return "";
   if (!Array.isArray(imageUrls) || imageUrls.length === 0) return markdown;
@@ -367,13 +425,11 @@ export function Reading() {
       prioritizedMarkdownImageRendered = true;
 
       return (
-        <img
+        <ReadingImage
           {...props}
           src={resolved}
           alt={alt || ""}
-          loading={shouldPrioritize ? "eager" : "lazy"}
-          fetchPriority={shouldPrioritize ? "high" : "auto"}
-          decoding="async"
+          prioritize={shouldPrioritize}
           style={{
             display: "block",
             maxWidth: "100%",
@@ -416,12 +472,11 @@ export function Reading() {
 
                 {resolvedFirstImageUrl && !contentHasAnyImages && (
                   <div className="w-full h-64 md:h-80 rounded-[24px] overflow-hidden shadow-md mb-6">
-                    <img
+                    <ReadingImage
                       src={resolvedFirstImageUrl}
                       alt={book.title}
                       className="w-full h-full object-cover"
-                      fetchPriority="high"
-                      decoding="async"
+                      prioritize
                     />
                   </div>
                 )}
