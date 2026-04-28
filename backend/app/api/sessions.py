@@ -86,6 +86,31 @@ def session_status(
     return SessionStatusResponse(active=True)
 
 
+@router.get("/authorize")
+def authorize_session(
+    recsys_session_id: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
+):
+    """Return 204 only when the session cookie maps to an active session.
+
+    This is intentionally tiny and status-code based so it can be used from
+    Nginx `auth_request` for protecting static assets.
+    """
+    if not recsys_session_id:
+        raise HTTPException(status_code=401, detail="No active session.")
+
+    session = (
+        db.query(StudentSession)
+        .filter(StudentSession.session_id == recsys_session_id)
+        .first()
+    )
+
+    if not session or session.ended_at is not None:
+        raise HTTPException(status_code=401, detail="No active session.")
+
+    return Response(status_code=204)
+
+
 @router.post("/validate", response_model=ValidatePasscodeResponse)
 def validate_passcode(payload: ValidatePasscodeRequest):
     """
