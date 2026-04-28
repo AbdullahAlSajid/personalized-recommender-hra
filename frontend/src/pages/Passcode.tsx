@@ -54,7 +54,7 @@ export function Passcode() {
       <div className="w-full max-w-md flex flex-col items-center gap-8">
 
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-[#2d3142]">Les i lesesystemet!</h1>
+          <h1 className="text-4xl font-bold text-[#2d3142]">Finn din neste tekst å lese!</h1>
           <p className="text-[#5d6875] text-lg">Skriv inn din 6-sifrede kode for å starte.</p>
         </div>
 
