@@ -106,81 +106,6 @@ function fillEmptyMarkdownImageUrls(markdown: string, imageUrls: string[]): stri
   });
 }
 
-const markdownComponents: Components = {
-  h2: ({ children, ...props }) => (
-    <h2
-      {...props}
-      className="text-2xl font-semibold"
-      style={{
-        fontSize: "1.75rem",
-        lineHeight: 1.25,
-        marginTop: "1.5rem",
-        marginBottom: "0.5rem",
-      }}
-    >
-      {children}
-    </h2>
-  ),
-  h3: ({ children, ...props }) => (
-    <h3
-      {...props}
-      className="text-xl font-semibold"
-      style={{
-        fontSize: "1.5rem",
-        lineHeight: 1.3,
-        marginTop: "1.25rem",
-        marginBottom: "0.5rem",
-      }}
-    >
-      {children}
-    </h3>
-  ),
-  p: ({ children, ...props }) => {
-    const parts = React.Children.toArray(children).filter((child) => {
-      if (typeof child === "string") return child.trim() !== "";
-      return true;
-    });
-
-    const isOnlyImage =
-      parts.length === 1 &&
-      React.isValidElement(parts[0]) &&
-      parts[0].type === "img";
-
-    if (isOnlyImage) {
-      return (
-        <p {...props} style={{ margin: 0 }}>
-          {children}
-        </p>
-      );
-    }
-
-    return (
-      <p {...props} style={{ marginTop: "0.75rem", marginBottom: "1rem" }}>
-        {children}
-      </p>
-    );
-  },
-  img: ({ src, alt, ...props }) => {
-    const resolved = resolveMarkdownImageSrc(src);
-    if (!resolved) return null;
-    return (
-      <img
-        {...props}
-        src={resolved}
-        alt={alt || ""}
-        loading="lazy"
-        style={{
-          display: "block",
-          maxWidth: "100%",
-          height: "auto",
-          marginTop: "1.5rem",
-          marginBottom: "1.5rem",
-        }}
-      />
-    );
-  },
-};
-
 export function Reading() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -379,6 +304,88 @@ export function Reading() {
     Array.isArray(book.image_urls) ? book.image_urls : []
   );
 
+  let prioritizedMarkdownImageRendered = false;
+  const markdownComponents: Components = {
+    h2: ({ children, ...props }) => (
+      <h2
+        {...props}
+        className="text-2xl font-semibold"
+        style={{
+          fontSize: "1.75rem",
+          lineHeight: 1.25,
+          marginTop: "1.5rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        {children}
+      </h2>
+    ),
+    h3: ({ children, ...props }) => (
+      <h3
+        {...props}
+        className="text-xl font-semibold"
+        style={{
+          fontSize: "1.5rem",
+          lineHeight: 1.3,
+          marginTop: "1.25rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        {children}
+      </h3>
+    ),
+    p: ({ children, ...props }) => {
+      const parts = React.Children.toArray(children).filter((child) => {
+        if (typeof child === "string") return child.trim() !== "";
+        return true;
+      });
+
+      const isOnlyImage =
+        parts.length === 1 &&
+        React.isValidElement(parts[0]) &&
+        parts[0].type === "img";
+
+      if (isOnlyImage) {
+        return (
+          <p {...props} style={{ margin: 0 }}>
+            {children}
+          </p>
+        );
+      }
+
+      return (
+        <p {...props} style={{ marginTop: "0.75rem", marginBottom: "1rem" }}>
+          {children}
+        </p>
+      );
+    },
+    img: ({ src, alt, ...props }) => {
+      const resolved = resolveMarkdownImageSrc(src);
+      if (!resolved) return null;
+
+      const shouldPrioritize = !prioritizedMarkdownImageRendered;
+      prioritizedMarkdownImageRendered = true;
+
+      return (
+        <img
+          {...props}
+          src={resolved}
+          alt={alt || ""}
+          loading={shouldPrioritize ? "eager" : "lazy"}
+          fetchPriority={shouldPrioritize ? "high" : "auto"}
+          decoding="async"
+          style={{
+            display: "block",
+            maxWidth: "100%",
+            height: "auto",
+            marginTop: "1.5rem",
+            marginBottom: "1.5rem",
+          }}
+        />
+      );
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar />
@@ -413,6 +420,8 @@ export function Reading() {
                       src={resolvedFirstImageUrl}
                       alt={book.title}
                       className="w-full h-full object-cover"
+                      fetchPriority="high"
+                      decoding="async"
                     />
                   </div>
                 )}
