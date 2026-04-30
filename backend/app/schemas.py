@@ -27,6 +27,7 @@ class SessionStatusResponse(BaseModel):
 
 class StartSessionRequest(BaseModel):
     token: str = Field(..., min_length=1)
+    consent_given: bool
 
 
 """

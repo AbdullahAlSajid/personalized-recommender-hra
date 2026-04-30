@@ -146,13 +146,16 @@ def start_session(
             .first()
         )
         if existing and not existing.ended_at:
+            existing.consent_given = payload.consent_given
+            db.commit()
+            db.refresh(existing)
             _set_session_cookie(response, str(existing.session_id))
             return CreateSessionResponse(
                 session_id=str(existing.session_id),
                 started_at=existing.started_at,
             )
 
-    session = StudentSession()
+    session = StudentSession(consent_given=payload.consent_given)
     db.add(session)
     db.commit()
     db.refresh(session)

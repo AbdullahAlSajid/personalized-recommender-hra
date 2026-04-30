@@ -15,6 +15,7 @@ class StudentSession(Base):
 
     session_id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    consent_given = Column(Boolean, nullable=False, server_default="false")
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
 
