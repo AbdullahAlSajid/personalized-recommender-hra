@@ -18,14 +18,14 @@ export function Consent() {
     return null;
   }
 
-  const handleConsent = async () => {
+  const handleStart = async (consentGiven: boolean) => {
     if (inFlight.current) return;
     inFlight.current = true;
     setLoading(true);
     setError('');
 
     try {
-      await startSession(token);
+      await startSession(token, consentGiven);
       navigate('/interests');
     } catch (err) {
       if (err instanceof TokenExpiredError) {
@@ -38,11 +38,6 @@ export function Consent() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDecline = () => {
-    // No DB row was created — just go back. Nothing to clean up.
-    navigate('/');
   };
 
   return (
@@ -95,7 +90,7 @@ export function Consent() {
 
           <div className="grid grid-cols-2 gap-3 pt-0">
             <Button
-              onClick={handleConsent}
+              onClick={() => void handleStart(true)}
               disabled={loading}
               variant="primary"
               className="w-full"
@@ -104,7 +99,7 @@ export function Consent() {
             </Button>
 
             <Button
-              onClick={handleDecline}
+              onClick={() => void handleStart(false)}
               disabled={loading}
               variant="completion"
               className="w-full"

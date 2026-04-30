@@ -116,12 +116,12 @@ export class TokenExpiredError extends Error {
   constructor() { super('token_expired'); }
 }
 
-export async function startSession(token: string): Promise<void> {
+export async function startSession(token: string, consentGiven: boolean): Promise<void> {
   const res = await fetch(`${BACKEND}/sessions/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, consent_given: consentGiven }),
   });
   if (!res.ok) {
     if (res.status === 401) throw new TokenExpiredError();
