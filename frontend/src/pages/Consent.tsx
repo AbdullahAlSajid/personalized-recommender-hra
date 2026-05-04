@@ -51,12 +51,12 @@ export function Consent() {
 
         <Card className="w-full p-8 sm:p-10 space-y-6 bg-white border-[#e0ddd5] rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
           <div className="space-y-6 text-[#2d3142] text-sm leading-relaxed">
-            <p className="font-semibold">Samtykket registreres av lærer og gjelder studentens deltakelse.</p>
+            <p className="font-semibold">Samtykket registreres av lærer og gjelder elevens deltakelse.</p>
 
             <div className="space-y-2">
               <p className="font-semibold">Kort om prosjektet</p>
               <p className="text-[#5d6875]">
-                Dette er en del av et forskningsprosjekt ved universitetet. Målet er å forbedre et
+                Dette er en del av et forskningsprosjekt ved universitetet. Målet er å utvikle et
                 personalisert leseanbefalingssystem.
               </p>
             </div>
@@ -64,8 +64,8 @@ export function Consent() {
             <div className="space-y-2">
               <p className="font-semibold">Hva registreres</p>
               <ul className="list-disc pl-5 text-[#5d6875] space-y-1">
-                <li>Hvilke tekster studenten leser</li>
-                <li>Studentens svar på spørsmål</li>
+                <li>Hvilke tekster eleven leser</li>
+                <li>Elevens svar på spørsmål</li>
               </ul>
             </div>
 
@@ -74,12 +74,12 @@ export function Consent() {
               <ul className="list-disc pl-5 text-[#5d6875] space-y-1">
                 <li>Deltakelsen er frivillig</li>
                 <li>Dataene lagres uten navn eller andre identifiserende opplysninger</li>
-                <li>Studenten kan avslutte når som helst</li>
+                <li>Eleven kan avslutte når som helst</li>
               </ul>
             </div>
 
             <p className="font-bold border-l-4 border-[#e0ddd5] pl-6">
-              Hvis foresatte har gitt samtykke til at studenten kan delta, velg «Samtykke gitt».
+              Hvis foresatte har gitt samtykke til at eleven kan delta, velg «Samtykke gitt».
               Hvis ikke, velg «Samtykke ikke gitt».
             </p>
           </div>

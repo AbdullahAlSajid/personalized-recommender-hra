@@ -67,7 +67,317 @@ function stripLeadingTitleHeading(markdown: string, title: string): string {
 
 function removeEmptyMarkdownHeadings(markdown: string): string {
   if (!markdown) return "";
-  return markdown.replace(/^#{1,6}\s*$/gm, "");
+
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const cleaned: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    if (!/^[ \t]*#{1,6}[ \t]*$/.test(lines[index] ?? "")) {
+      cleaned.push(lines[index] ?? "");
+      continue;
+    }
+
+    const previous = cleaned[cleaned.length - 1] ?? "";
+    if (previous.trim() !== "") {
+      cleaned.push("");
+    }
+
+    while (index + 1 < lines.length && (lines[index + 1] ?? "").trim() === "") {
+      index += 1;
+    }
+  }
+
+  return cleaned.join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
+function isBlockMarkdownFragment(value: string): boolean {
+  return /^(#{1,6}\s|>|```|~{3}|[-+*]\s|\d+\.\s|!\[[^\]]*\]\(|<(?!(?:em|i)\b))/i.test(
+    value.trim()
+  );
+}
+
+function endsSentence(value: string): boolean {
+  return /[.!?…:]["'”’)*\]]*$/.test(value.trim());
+}
+
+function isPunctuationFragment(value: string): boolean {
+  return /^[,.;:!?…]+$/.test(value.trim());
+}
+
+function isInlineFragmentCandidate(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (isBlockMarkdownFragment(trimmed) || isPunctuationFragment(trimmed)) {
+    return false;
+  }
+  if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(trimmed)) return false;
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s&'"’‘-]+$/.test(trimmed)) return false;
+
+  return trimmed.split(/\s+/).length <= 5;
+}
+
+function isYearFragment(value: string): boolean {
+  return /^\(\d{4}\)$/.test(value.trim());
+}
+
+function appendMarkdownFragment(base: string, fragment: string): string {
+  const trimmed = fragment.trim();
+  if (!trimmed) return base;
+  if (!base) return trimmed;
+  return isPunctuationFragment(trimmed) ? `${base}${trimmed}` : `${base} ${trimmed}`;
+}
+
+function splitLeadingPunctuationFragment(
+  value: string
+): { punctuation: string; remainder: string } | null {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^([,.;:!?…]+)(.*)$/);
+  if (!match) return null;
+
+  return {
+    punctuation: match[1] ?? "",
+    remainder: (match[2] ?? "").trim(),
+  };
+}
+
+function startsLowercaseContinuation(value: string): boolean {
+  return /^[a-zà-öø-ÿ]/.test(value.trim());
+}
+
+function canInlineFollow(previous: string): boolean {
+  const trimmed = previous.trim();
+  if (!trimmed) return false;
+  if (isBlockMarkdownFragment(trimmed)) return false;
+  return !/[.!?…:]$/.test(trimmed);
+}
+
+function isImageOnlyParagraph(value: string): boolean {
+  return /^!\[[^\]]*\]\(\s*[^)]*\)$/.test(value.trim());
+}
+
+function isStandaloneSectionLabel(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (isBlockMarkdownFragment(trimmed) || isPunctuationFragment(trimmed)) {
+    return false;
+  }
+  if (!/^[A-ZÆØÅ][A-Za-zÀ-ÖØ-öø-ÿ\s-]{1,40}$/.test(trimmed)) return false;
+
+  const words = trimmed.split(/\s+/);
+  return words.length <= 3;
+}
+
+function promoteStandaloneSectionLabels(markdown: string): string {
+  if (!markdown) return "";
+
+  const paragraphs = markdown
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length < 3) return markdown;
+
+  const promoted = paragraphs.map((paragraph, index) => {
+    if (!isStandaloneSectionLabel(paragraph)) return paragraph;
+
+    const previous = paragraphs[index - 1]?.trim() ?? "";
+    const next = paragraphs[index + 1]?.trim() ?? "";
+    if (!next || !/^[A-ZÆØÅ]/.test(next)) return paragraph;
+
+    const previousAllowsHeading =
+      endsSentence(previous) || isImageOnlyParagraph(previous) || /^#{1,6}\s/.test(previous);
+
+    if (!previousAllowsHeading) return paragraph;
+
+    return `### ${paragraph}`;
+  });
+
+  return promoted.join("\n\n");
+}
+
+function readTitleYearList(
+  paragraphs: string[],
+  startIndex: number
+): { items: string[]; nextIndex: number } | null {
+  const items: string[] = [];
+  let cursor = startIndex;
+
+  while (cursor + 1 < paragraphs.length) {
+    const title = (paragraphs[cursor] ?? "").trim();
+    const year = (paragraphs[cursor + 1] ?? "").trim();
+
+    if (!isInlineFragmentCandidate(title) || !isYearFragment(year)) {
+      break;
+    }
+
+    items.push(`- *${title}* ${year}`);
+    cursor += 2;
+  }
+
+  if (items.length < 2) return null;
+  return { items, nextIndex: cursor };
+}
+
+function readSimpleStandaloneList(
+  paragraphs: string[],
+  startIndex: number
+): { items: string[]; nextIndex: number } | null {
+  const items: string[] = [];
+  let cursor = startIndex;
+
+  while (cursor < paragraphs.length) {
+    const item = (paragraphs[cursor] ?? "").trim();
+    if (!item) {
+      cursor += 1;
+      continue;
+    }
+
+    if (!isInlineFragmentCandidate(item) || endsSentence(item)) {
+      break;
+    }
+
+    items.push(`- ${item}`);
+    cursor += 1;
+  }
+
+  if (items.length < 2) return null;
+  return { items, nextIndex: cursor };
+}
+
+function readMarkdownList(
+  paragraphs: string[],
+  startIndex: number
+): { items: string[]; nextIndex: number } | null {
+  return readTitleYearList(paragraphs, startIndex) ?? readSimpleStandaloneList(paragraphs, startIndex);
+}
+
+function normalizeBrokenInlineEmphasis(markdown: string): string {
+  if (!markdown) return "";
+
+  const paragraphs = markdown
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length < 2) return markdown;
+
+  const merged: string[] = [paragraphs[0]];
+  for (let index = 1; index < paragraphs.length; ) {
+    let previous = merged[merged.length - 1];
+
+    if (previous.trim().endsWith(":")) {
+      const list = readMarkdownList(paragraphs, index);
+      if (list) {
+        merged.push(list.items.join("\n"));
+        index = list.nextIndex;
+        continue;
+      }
+    }
+
+    if (!canInlineFollow(previous)) {
+      merged.push(paragraphs[index]);
+      index += 1;
+      continue;
+    }
+
+    let cursor = index;
+    let changed = false;
+    let handledList = false;
+
+    while (cursor < paragraphs.length) {
+      if (previous.trim().endsWith(":")) {
+        const list = readMarkdownList(paragraphs, cursor);
+        if (list) {
+          merged[merged.length - 1] = previous;
+          merged.push(list.items.join("\n"));
+          index = list.nextIndex;
+          changed = true;
+          handledList = true;
+          break;
+        }
+      }
+
+      const current = paragraphs[cursor]?.trim() ?? "";
+      if (!current) {
+        cursor += 1;
+        continue;
+      }
+
+      if (isInlineFragmentCandidate(current)) {
+        const fragments: string[] = [];
+        while (
+          cursor < paragraphs.length &&
+          isInlineFragmentCandidate(paragraphs[cursor] ?? "")
+        ) {
+          fragments.push((paragraphs[cursor] ?? "").trim());
+          cursor += 1;
+        }
+
+        let punctuationSuffix = "";
+        while (cursor < paragraphs.length && isPunctuationFragment(paragraphs[cursor] ?? "")) {
+          punctuationSuffix += (paragraphs[cursor] ?? "").trim();
+          cursor += 1;
+        }
+
+        previous = appendMarkdownFragment(
+          previous,
+          `*${fragments.join(" ")}*${punctuationSuffix}`
+        );
+        changed = true;
+
+        if (endsSentence(previous)) {
+          break;
+        }
+
+        continue;
+      }
+
+      const leadingPunctuation = splitLeadingPunctuationFragment(current);
+      if (leadingPunctuation?.punctuation) {
+        previous = appendMarkdownFragment(previous, leadingPunctuation.punctuation);
+        changed = true;
+
+        if (!leadingPunctuation.remainder) {
+          cursor += 1;
+          continue;
+        }
+
+        if (startsLowercaseContinuation(leadingPunctuation.remainder) || endsSentence(previous)) {
+          previous = appendMarkdownFragment(previous, leadingPunctuation.remainder);
+          cursor += 1;
+          continue;
+        }
+
+        break;
+      }
+
+      if (startsLowercaseContinuation(current)) {
+        previous = appendMarkdownFragment(previous, current);
+        changed = true;
+        cursor += 1;
+        continue;
+      }
+
+      break;
+    }
+
+    if (!changed) {
+      merged.push(paragraphs[index]);
+      index += 1;
+      continue;
+    }
+
+    if (handledList) {
+      continue;
+    }
+
+    merged[merged.length - 1] = previous;
+    index = cursor;
+  }
+
+  return merged.join("\n\n");
 }
 
 function resolveImageUrl(url?: string | null): string | null {
@@ -373,8 +683,11 @@ export function Reading() {
         : "";
 
   const contentLooksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(content);
-  const cleanedContent = removeEmptyMarkdownHeadings(
+  const normalizedMarkdownContent = removeEmptyMarkdownHeadings(
     stripLeadingTitleHeading(content, book.title)
+  );
+  const cleanedContent = promoteStandaloneSectionLabels(
+    normalizeBrokenInlineEmphasis(normalizedMarkdownContent)
   );
   const contentHasMarkdownImages = /!\[[^\]]*\]\(\s*[^)]*\)/.test(cleanedContent);
   const contentHasHtmlImages = /<img\b/i.test(content);

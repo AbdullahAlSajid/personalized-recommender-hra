@@ -187,7 +187,7 @@ export function SessionFeedback() {
                     <div className="flex items-start gap-3">
                       <Badge number={1} />
                       <h2 className="text-xl font-semibold text-[#2d3142] mt-1 leading-snug">
-                        Viste systemet deg tekster du hadde lyst til å lese?
+                        Viste programmet deg tekster du hadde lyst til å lese?
                       </h2>
                     </div>
 
@@ -227,7 +227,7 @@ export function SessionFeedback() {
                           { value: "too_easy", label: "De fleste tekstene var for lette" },
                           {
                             value: "fit_ok",
-                            label: "De fleste tekstene passet passe bra",
+                            label: "De fleste tekstene var passe vanskelige",
                           },
                           { value: "too_hard", label: "De fleste tekstene var for vanskelige" },
                           {
