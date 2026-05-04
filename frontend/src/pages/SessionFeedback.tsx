@@ -17,6 +17,69 @@ type QuestionStepKey = Exclude<FeedbackStepKey, "submit">;
 
 const FAVORITE_NONE = "__none__";
 
+function resolveImageUrl(firstImageUrl?: string | null): string | null {
+  if (!firstImageUrl) return null;
+  if (firstImageUrl.startsWith("http://") || firstImageUrl.startsWith("https://")) {
+    return firstImageUrl;
+  }
+  if (firstImageUrl.startsWith("/")) {
+    return `${BACKEND_URL}${firstImageUrl}`;
+  }
+  return `${BACKEND_URL}/${firstImageUrl}`;
+}
+
+function resolveThumbnailUrl(url?: string | null): string | null {
+  if (!url || url.startsWith("data:")) return null;
+
+  try {
+    const resolved = new URL(url, BACKEND_URL);
+    if (
+      !resolved.pathname.startsWith("/images/") ||
+      resolved.pathname.startsWith("/images/thumbs/")
+    ) {
+      return null;
+    }
+
+    resolved.pathname = resolved.pathname.replace(
+      "/images/",
+      "/images/thumbs/"
+    );
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
+function SessionFeedbackImage({
+  src,
+  alt,
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const fallbackSrc = src ?? null;
+  const thumbnailSrc = resolveThumbnailUrl(fallbackSrc);
+  const preferredSrc = thumbnailSrc ?? fallbackSrc;
+  const [currentSrc, setCurrentSrc] = useState(preferredSrc ?? "");
+
+  useEffect(() => {
+    setCurrentSrc(preferredSrc ?? "");
+  }, [preferredSrc]);
+
+  if (!fallbackSrc) return null;
+
+  return (
+    <img
+      {...props}
+      src={currentSrc}
+      alt={alt}
+      onError={() => {
+        if (currentSrc !== fallbackSrc) {
+          setCurrentSrc(fallbackSrc);
+        }
+      }}
+    />
+  );
+}
+
 export function SessionFeedback() {
   const navigate = useNavigate();
 
@@ -308,7 +371,7 @@ export function SessionFeedback() {
 
                                 {resolvedImageUrl ? (
                                   <div className="w-20 h-16 rounded-[12px] overflow-hidden border border-[#e0ddd5] flex-shrink-0">
-                                    <img
+                                    <SessionFeedbackImage
                                       src={resolvedImageUrl}
                                       alt={opt.title}
                                       loading="lazy"
@@ -410,13 +473,6 @@ export function SessionFeedback() {
       </main>
     </div>
   );
-}
-
-function resolveImageUrl(url?: string | null): string | null {
-  if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${BACKEND_URL}${url}`;
-  return `${BACKEND_URL}/${url}`;
 }
 
 function Badge({ number }: { number: number }) {

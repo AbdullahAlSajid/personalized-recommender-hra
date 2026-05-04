@@ -1334,7 +1334,7 @@ def get_session_feedback_texts(db: DBSession, session_id: str) -> list[dict[str,
 
         first_image_url = None
         if (safe_name := _to_safe_image_name(r.get("first_image_file_name"))):
-            first_image_url = f"/images/{quote(safe_name)}"
+            first_image_url = _build_preferred_image_url(safe_name)
 
         out.append(
             {
