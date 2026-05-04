@@ -230,6 +230,12 @@ def _build_image_url(name: str, *, prefer_thumbnail: bool = False) -> str:
     return f"/images/{encoded}"
 
 
+def _build_preferred_image_url(name: str) -> str:
+    if (_thumbs_dir / name).is_file():
+        return _build_image_url(name, prefer_thumbnail=True)
+    return _build_image_url(name)
+
+
 def _choose_preview_image_url(values: object) -> str | None:
     candidates = [
         name for name in (_to_safe_image_name(value) for value in (values or [])) if name
@@ -239,7 +245,7 @@ def _choose_preview_image_url(values: object) -> str | None:
 
     for name in candidates:
         if (_thumbs_dir / name).is_file():
-            return _build_image_url(name, prefer_thumbnail=True)
+            return _build_preferred_image_url(name)
 
     return _build_image_url(candidates[0])
 
@@ -384,16 +390,16 @@ def get_text_detail(db: DBSession, text_id: str) -> dict | None:
 
     image_file_names = list(row.get("image_file_names_array") or [])
     safe_names = [
-        quote(s) for s in (
+        s for s in (
             _to_safe_image_name(x) for x in image_file_names
         )
         if s
     ]
-    image_urls = [f"/images/{name}" for name in safe_names]
+    image_urls = [_build_preferred_image_url(name) for name in safe_names]
 
     first_image_url = None
     if (safe_first := _to_safe_image_name(row.get("first_image_file_name"))):
-        first_image_url = f"/images/{quote(safe_first)}"
+        first_image_url = _build_preferred_image_url(safe_first)
 
     return {
         "text_id": row.get("text_id"),
