@@ -337,10 +337,10 @@ export function SessionFeedback() {
                               <label
                                 key={opt.text_id}
                                 className={
-                                  "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border transition-all duration-200 min-w-0 overflow-hidden " +
+                                  "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border-2 transition-all duration-200 min-w-0 overflow-hidden " +
                                   (selected
                                     ? "border-[#4ecdc4] bg-white shadow-[0_2px_8px_rgba(78,205,196,0.15)]"
-                                    : "border-[#e0ddd5] bg-transparent hover:bg-white/50") +
+                                    : "border-[#c8c1b6] bg-transparent hover:bg-white/50") +
                                   (isLastOdd
                                     ? " col-span-2 justify-self-center w-full max-w-[520px]"
                                     : "")
@@ -391,10 +391,10 @@ export function SessionFeedback() {
                           })}
                           <label
                             className={
-                              "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border transition-all duration-200 col-span-2 justify-self-center w-full max-w-[520px] " +
+                              "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border-2 transition-all duration-200 col-span-2 justify-self-center w-full max-w-[520px] " +
                               (favoriteTextId === FAVORITE_NONE
                                 ? "border-[#4ecdc4] bg-white shadow-[0_2px_8px_rgba(78,205,196,0.15)]"
-                                : "border-[#e0ddd5] bg-transparent hover:bg-white/50")
+                                : "border-[#c8c1b6] bg-transparent hover:bg-white/50")
                             }
                           >
                             <div
