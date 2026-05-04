@@ -337,7 +337,7 @@ export function SessionFeedback() {
                               <label
                                 key={opt.text_id}
                                 className={
-                                  "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border transition-all duration-200 " +
+                                  "flex items-start gap-3 p-4 rounded-[16px] cursor-pointer border transition-all duration-200 min-w-0 overflow-hidden " +
                                   (selected
                                     ? "border-[#4ecdc4] bg-white shadow-[0_2px_8px_rgba(78,205,196,0.15)]"
                                     : "border-[#e0ddd5] bg-transparent hover:bg-white/50") +
@@ -370,7 +370,10 @@ export function SessionFeedback() {
                                 />
 
                                 {resolvedImageUrl ? (
-                                  <div className="w-20 h-16 rounded-[12px] overflow-hidden border border-[#e0ddd5] flex-shrink-0">
+                                  <div
+                                    className="rounded-[12px] overflow-hidden border border-[#e0ddd5] flex-shrink-0"
+                                    style={{ width: "min(10rem, 40%)", aspectRatio: "5 / 4" }}
+                                  >
                                     <SessionFeedbackImage
                                       src={resolvedImageUrl}
                                       alt={opt.title}
@@ -380,7 +383,7 @@ export function SessionFeedback() {
                                   </div>
                                 ) : null}
 
-                                <span className="text-[#2d3142] font-medium">
+                                <span className="block min-w-0 flex-1 break-words text-[#2d3142] font-semibold leading-snug">
                                   {opt.title}
                                 </span>
                               </label>
