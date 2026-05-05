@@ -509,6 +509,7 @@ export function Reading() {
   const [questions, setQuestions] = useState<TextQuestion[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [questionError, setQuestionError] = useState<string | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -592,6 +593,19 @@ export function Reading() {
     };
   }, [isDesktop]);
 
+  const currentQuestion = questions[questionIndex] ?? null;
+  const isCurrentGlobal = currentQuestion?.question_id?.startsWith("global:") ?? false;
+  const currentAnswer = currentQuestion ? answers[currentQuestion.question_id] : undefined;
+  const isCurrentGlobalAnswered =
+    !isCurrentGlobal ||
+    (typeof currentAnswer === "string"
+      ? currentAnswer.length > 0
+      : Array.isArray(currentAnswer) && currentAnswer.length > 0);
+
+  useEffect(() => {
+    setQuestionError(null);
+  }, [questionIndex, currentAnswer]);
+
   const handleShowQuestions = async () => {
     if (!id) return;
 
@@ -624,6 +638,10 @@ export function Reading() {
     }
 
     if (variant === "question") {
+      if (isCurrentGlobal && !isCurrentGlobalAnswered) {
+        setQuestionError("Du må svare på dette spørsmålet for å fortsette.");
+        return;
+      }
       if (questionIndex < questions.length - 1) setQuestionIndex((i) => i + 1);
       else setVariant("submit");
     }
@@ -672,6 +690,15 @@ export function Reading() {
       </div>
     );
   }
+
+  const lastQuestion = questions.length > 0 ? questions[questions.length - 1] : null;
+  const lastAnswer = lastQuestion ? answers[lastQuestion.question_id] : undefined;
+  const canSubmit =
+    !lastQuestion ||
+    !lastQuestion.question_id.startsWith("global:") ||
+    (typeof lastAnswer === "string"
+      ? lastAnswer.length > 0
+      : Array.isArray(lastAnswer) && lastAnswer.length > 0);
 
   const resolvedFirstImageUrl = resolveImageUrl(book.first_image_url);
 
@@ -888,6 +915,7 @@ export function Reading() {
                         totalSteps={Math.max(1, questions.length)}
                         onNext={handleNext}
                         onPrev={handlePrev}
+                        error={questionError}
                       >
                         {questions.length === 0 ? (
                           <div className="space-y-2 text-center">
@@ -1066,7 +1094,7 @@ export function Reading() {
                         </h3>
 
                         <div className="flex flex-col gap-4 w-full max-w-xs">
-                          <Button variant="completion" onClick={handleSubmit} disabled={submitting}>
+                          <Button variant="completion" onClick={handleSubmit} disabled={submitting || !canSubmit}>
                             Send inn
                           </Button>
                           <button
@@ -1104,6 +1132,7 @@ function QuestionContainer({
   onNext,
   onPrev,
   showPrev = true,
+  error,
 }: {
   children: React.ReactNode;
   step: number;
@@ -1111,6 +1140,7 @@ function QuestionContainer({
   onNext: () => void;
   onPrev: () => void;
   showPrev?: boolean;
+  error?: string | null;
 }) {
   return (
     <motion.div
@@ -1120,6 +1150,10 @@ function QuestionContainer({
       className="flex flex-col h-full p-8"
     >
       <div className="flex-1">{children}</div>
+
+      {error && (
+        <p className="text-sm text-red-600 text-center mt-8">{error}</p>
+      )}
 
       <div className="mt-8 pt-6 border-t border-[#e0ddd5] grid grid-cols-3 items-center">
         <div className="justify-self-start">
