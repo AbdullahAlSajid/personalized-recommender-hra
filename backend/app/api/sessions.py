@@ -19,7 +19,7 @@ router = APIRouter()
 
 COMMON_PASSCODE = os.getenv("COMMON_PASSCODE", "123456")
 COOKIE_NAME = "recsys_session_id"
-COOKIE_MAX_AGE = 60 * 60  # 1 hour
+COOKIE_MAX_AGE = 90 * 60  # 90 minutes
 TOKEN_TTL = timedelta(hours=1)
 
 # In-memory one-time token store: { token_str: expiry_datetime }

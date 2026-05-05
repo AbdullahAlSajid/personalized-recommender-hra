@@ -5,6 +5,7 @@ import {
   getSessionRecommendations,
   refreshSessionRecommendations,
   logSessionEvent,
+  SessionExpiredError,
   BACKEND_URL,
   type SessionRecommendation,
 } from '../lib/session';
@@ -243,6 +244,7 @@ export function Dashboard() {
         setRecommendations(texts);
       } catch (err) {
         if (!active) return;
+        if (err instanceof SessionExpiredError) { navigate('/'); return; }
         setError(err instanceof Error ? err.message : 'Kunne ikke hente anbefalinger.');
       } finally {
         if (active) {
@@ -297,6 +299,7 @@ export function Dashboard() {
                 const next = await refreshSessionRecommendations(payloadIds);
                 setRecommendations(next);
               } catch (err) {
+                if (err instanceof SessionExpiredError) { navigate('/'); return; }
                 setError(err instanceof Error ? err.message : 'Kunne ikke oppdatere anbefalingene.');
               } finally {
                 setRefreshing(false);

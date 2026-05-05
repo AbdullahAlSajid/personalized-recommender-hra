@@ -9,6 +9,7 @@ import {
   endSession,
   getSessionFeedbackTexts,
   submitSessionFeedback,
+  SessionExpiredError,
   type SessionFeedbackText,
 } from "../lib/session";
 
@@ -101,7 +102,10 @@ export function SessionFeedback() {
     setTextsLoading(true);
     getSessionFeedbackTexts()
       .then((data) => setTexts(data))
-      .catch(() => setTextsError("Kunne ikke hente tekstene fra økten."))
+      .catch((err) => {
+        if (err instanceof SessionExpiredError) { navigate('/'); return; }
+        setTextsError("Kunne ikke hente tekstene fra økten.");
+      })
       .finally(() => setTextsLoading(false));
   }, []);
 
@@ -192,9 +196,10 @@ export function SessionFeedback() {
         favorite_text_id: favoriteTextIdPayload,
         favorite_why: favoriteWhyPayload,
       });
-
       await endSession();
       navigate("/");
+    } catch (err) {
+      if (err instanceof SessionExpiredError) { navigate('/'); return; }
     } finally {
       setSubmitting(false);
     }

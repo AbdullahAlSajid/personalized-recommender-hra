@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { getBroadTopics, saveInterests, type BroadTopic } from "../lib/session";
+import { getBroadTopics, saveInterests, SessionExpiredError, type BroadTopic } from "../lib/session";
 
 export function Interests() {
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ export function Interests() {
         setTopics(fetchedTopics);
       } catch (error) {
         if (!active) return;
+        if (error instanceof SessionExpiredError) { navigate('/'); return; }
         const message = error instanceof Error
           ? error.message
           : "Kunne ikke laste interesser.";
@@ -66,6 +67,7 @@ export function Interests() {
       await saveInterests(Array.from(selected));
       navigate("/dashboard");
     } catch (error) {
+      if (error instanceof SessionExpiredError) { navigate('/'); return; }
       const message = error instanceof Error
         ? error.message
         : "Kunne ikke lagre interesser.";

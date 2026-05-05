@@ -12,6 +12,7 @@ import {
   getTextQuestionsById,
   logSessionEvent,
   submitReadingAnswers,
+  SessionExpiredError,
   type TextQuestion,
 } from "../lib/session";
 import { motion, AnimatePresence } from "motion/react";
@@ -528,7 +529,8 @@ export function Reading() {
         setBook(data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err instanceof SessionExpiredError) { navigate('/'); return; }
         setError("Kunne ikke hente teksten.");
         setLoading(false);
       });
@@ -607,7 +609,8 @@ export function Reading() {
       setQuestions(fetched);
       setQuestionIndex(0);
       setVariant(fetched.length > 0 ? "question" : "submit");
-    } catch {
+    } catch (err) {
+      if (err instanceof SessionExpiredError) { navigate('/'); return; }
       setQuestionsError("Kunne ikke hente spørsmålene.");
     } finally {
       setQuestionsLoading(false);
@@ -648,16 +651,13 @@ export function Reading() {
 
     setSubmitting(true);
     try {
-      await submitReadingAnswers({
-        text_id: id,
-        answers,
-      });
-    } catch {
-      // Keep UX simple: still allow the student to proceed.
-      // If you want strict persistence, we can block navigation and show an error.
+      await submitReadingAnswers({ text_id: id, answers });
+      navigate("/completion");
+    } catch (err) {
+      if (err instanceof SessionExpiredError) { navigate('/'); return; }
+      navigate("/completion"); // keep UX simple: proceed even if submit failed
     } finally {
       setSubmitting(false);
-      navigate("/completion");
     }
   };
 

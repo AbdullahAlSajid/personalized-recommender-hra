@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 from sqlalchemy import (
-    BigInteger, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, func,
+    BigInteger, Boolean, Column, DateTime, Float, ForeignKey, Index, Integer, String, func, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -58,6 +58,15 @@ Requires: slate_events and reading_events tables
 
 class SlateEvent(Base):
     __tablename__ = "slate_events"
+    __table_args__ = (
+        Index(
+            "uq_slate_non_refresh",
+            "session_id",
+            "round_number",
+            unique=True,
+            postgresql_where=text("was_refresh = FALSE"),
+        ),
+    )
 
     slate_id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(

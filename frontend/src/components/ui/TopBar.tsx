@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { LogOut } from 'lucide-react';
-import { endSession, getSessionFeedbackTexts } from '../../lib/session';
+import { endSession, getSessionFeedbackTexts, SessionExpiredError } from '../../lib/session';
 import { Button } from './Button';
 import { Card } from './card';
 
@@ -49,8 +49,8 @@ export function TopBar() {
       }
 
       navigate('/session-feedback');
-    } catch {
-      // If we can't check, fall back to previous behavior.
+    } catch (err) {
+      if (err instanceof SessionExpiredError) { navigate('/'); return; }
       navigate('/session-feedback');
     } finally {
       setEndingSession(false);

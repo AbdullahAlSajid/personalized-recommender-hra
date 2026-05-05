@@ -7,6 +7,7 @@ Texts are loaded once and cached. Session state is reconstructed from DB per req
 
 from __future__ import annotations
 
+import math
 import uuid
 import html
 import re
@@ -18,6 +19,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text as sql_text
 from sqlalchemy import bindparam
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as DBSession
 
 from app.models import (
@@ -935,22 +937,37 @@ def get_current_recommendations(
             estimated_level=result.get("estimated_level"),
         )
         db.add(slate_event)
-        db.flush()
-        db.add(
-            SessionEvent(
-                session_id=_to_uuid(session_id),
-                slate_id=slate_event.slate_id,
-                event_type="dashboard_slate_shown",
-                event_metadata={
-                    "round_number": result.get("round_number"),
-                    "shown_text_ids": shown_text_ids,
-                    "w_topic": result.get("w_topic"),
-                    "w_difficulty": result.get("w_difficulty"),
-                    "estimated_level": result.get("estimated_level"),
-                },
+        try:
+            db.flush()
+            db.add(
+                SessionEvent(
+                    session_id=_to_uuid(session_id),
+                    slate_id=slate_event.slate_id,
+                    event_type="dashboard_slate_shown",
+                    event_metadata={
+                        "round_number": result.get("round_number"),
+                        "shown_text_ids": shown_text_ids,
+                        "w_topic": result.get("w_topic"),
+                        "w_difficulty": result.get("w_difficulty"),
+                        "estimated_level": result.get("estimated_level"),
+                    },
+                )
             )
-        )
-        db.commit()
+            db.commit()
+        except IntegrityError:
+            # Another concurrent request already inserted the slate for this
+            # round. Roll back, then return that winning slate instead.
+            db.rollback()
+            winner = _pending_slate_event(
+                db, session_id=session_id, round_number=result["round_number"]
+            )
+            if winner is not None:
+                return _build_recommendations_payload_from_ids(
+                    db=db,
+                    session_id=session_id,
+                    interests=interests,
+                    shown_ids=list(winner.shown_text_ids or []),
+                )
 
     return result
 
@@ -1160,6 +1177,10 @@ def record_reading(
     if text_row.empty:
         raise ValueError(f"text_id '{chosen_text_id}' not found in corpus.")
     text_difficulty = float(text_row.iloc[0]["final_difficulty"])
+    if math.isnan(text_difficulty):
+        raise ValueError(
+            f"Text '{chosen_text_id}' has no valid difficulty value; cannot update level estimate."
+        )
 
     w_topic, w_diff = _get_weights(round_number)
 
@@ -1218,9 +1239,7 @@ def record_reading(
         db.add(slate_event)
         db.flush()
 
-    implied_level = text_difficulty + (3 - perceived_difficulty) * 0.5
-    implied_level = float(np.clip(implied_level, 1.0, 5.0))
-    level_estimator.update(text_difficulty, perceived_difficulty)
+    implied_level = level_estimator.update(text_difficulty, perceived_difficulty)
     estimated_level = level_estimator.estimated_level
 
     reading_event = ReadingEvent(

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -195,6 +195,21 @@ class SessionFeedbackTextsResponse(BaseModel):
 class SubmitReadingAnswersRequest(BaseModel):
     text_id: str = Field(..., min_length=1)
     answers: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_global_answer_ranges(self) -> "SubmitReadingAnswersRequest":
+        answers = self.answers or {}
+        for key in ("global:perceived_difficulty", "global:interest_rating"):
+            val = answers.get(key)
+            if val is None:
+                continue
+            try:
+                n = int(val)
+            except (TypeError, ValueError):
+                raise ValueError(f"'{key}' must be an integer, got {val!r}")
+            if not (1 <= n <= 5):
+                raise ValueError(f"'{key}' must be between 1 and 5, got {n}")
+        return self
 
 
 class SubmitReadingAnswersResponse(RecordReadingResponse):

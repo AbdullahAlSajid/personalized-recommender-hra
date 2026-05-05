@@ -160,7 +160,7 @@ class LevelEstimator:
 
     def update(self, text_difficulty: float, perceived_difficulty: int) -> float:
         """
-        Record one observation and return the updated estimated level.
+        Record one observation and return the implied level for this observation.
 
         Parameters
         ----------
@@ -169,15 +169,18 @@ class LevelEstimator:
 
         Returns
         -------
-        Updated estimated reading level.
+        The implied level computed from this observation (clipped to 1.0–5.0).
+        Access estimated_level property for the session mean across all observations.
         """
         if not (1 <= perceived_difficulty <= 5):
             raise ValueError(f"perceived_difficulty must be 1–5, got {perceived_difficulty}")
+        if math.isnan(float(text_difficulty)):
+            raise ValueError(f"text_difficulty must be a finite number, got {text_difficulty}")
 
         implied = text_difficulty + (3 - perceived_difficulty) * 0.5
         implied = float(np.clip(implied, 1.0, 5.0))
         self.implied_levels.append(implied)
-        return self.estimated_level
+        return implied
 
     @property
     def estimated_level(self) -> Optional[float]:

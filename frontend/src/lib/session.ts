@@ -3,7 +3,12 @@ export async function getTextById(text_id: string) {
   const res = await fetch(`${BACKEND}/session/text/${text_id}`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Kunne ikke hente teksten.');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error('Kunne ikke hente teksten.');
+  }
   return await res.json();
 }
 
@@ -27,7 +32,12 @@ export async function getTextQuestionsById(text_id: string): Promise<TextQuestio
   const res = await fetch(`${BACKEND}/session/text/${text_id}/questions`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Kunne ikke hente spørsmålene.');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error('Kunne ikke hente spørsmålene.');
+  }
   const data = await res.json();
   return Array.isArray(data?.questions) ? (data.questions as TextQuestion[]) : [];
 }
@@ -116,6 +126,18 @@ export class TokenExpiredError extends Error {
   constructor() { super('token_expired'); }
 }
 
+export class SessionExpiredError extends Error {
+  constructor() { super('session_expired'); }
+}
+
+function isSessionExpiry(status: number, detail: string): boolean {
+  return (
+    status === 401 ||
+    (status === 400 && detail === 'Session already ended.') ||
+    (status === 404 && detail === 'Session not found.')
+  );
+}
+
 export async function startSession(token: string, consentGiven: boolean): Promise<void> {
   const res = await fetch(`${BACKEND}/sessions/start`, {
     method: 'POST',
@@ -152,7 +174,9 @@ export async function getBroadTopics(): Promise<BroadTopic[]> {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke hente interesser.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke hente interesser.');
   }
 
   const data = await res.json();
@@ -169,7 +193,9 @@ export async function saveInterests(interests: string[]): Promise<void> {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke lagre interesser.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke lagre interesser.');
   }
 }
 
@@ -180,7 +206,9 @@ export async function getSessionRecommendations(): Promise<SessionRecommendation
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke hente anbefalinger.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke hente anbefalinger.');
   }
 
   const data = await res.json();
@@ -199,7 +227,9 @@ export async function refreshSessionRecommendations(
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke oppdatere anbefalingene.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke oppdatere anbefalingene.');
   }
 
   const data = await res.json();
@@ -223,7 +253,9 @@ export async function logSessionEvent(payload: SessionEventPayload): Promise<voi
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke logge hendelsen.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke logge hendelsen.');
   }
 }
 
@@ -240,7 +272,12 @@ export async function getSessionFeedbackTexts(): Promise<SessionFeedbackText[]> 
   const res = await fetch(`${BACKEND}/session/feedback/texts`, {
     credentials: 'include',
   });
-  if (!res.ok) throw new Error('Kunne ikke hente økt-tekstene.');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke hente økt-tekstene.');
+  }
   const data = await res.json();
   return Array.isArray(data?.texts) ? (data.texts as SessionFeedbackText[]) : [];
 }
@@ -261,7 +298,9 @@ export async function submitReadingAnswers(payload: {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke lagre svarene.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke lagre svarene.');
   }
 }
 
@@ -280,6 +319,8 @@ export async function submitSessionFeedback(payload: {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || 'Kunne ikke lagre tilbakemeldingen.');
+    const detail = (data.detail as string) || '';
+    if (isSessionExpiry(res.status, detail)) throw new SessionExpiredError();
+    throw new Error(detail || 'Kunne ikke lagre tilbakemeldingen.');
   }
 }
