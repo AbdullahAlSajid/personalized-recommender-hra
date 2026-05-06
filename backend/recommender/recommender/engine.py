@@ -297,112 +297,22 @@ class ScoringEngine:
 
 
 # ════════════════════════════════════════════════════════════
-# Slate Builder (MMR Diversity)
+# Slate Builder
 # ════════════════════════════════════════════════════════════
 
 class SlateBuilder:
-    """
-    Builds a slate of 2 texts using MMR-based diversity.
-
-    Text 1: highest composite_score.
-    Text 2: maximises  λ × composite_score − (1−λ) × similarity_to_text_1
-
-    Similarity uses both broad_topic and sub_topic Jaccard overlap,
-    as recommended by the topic pipeline documentation for finer
-    diversification.
-
-    Parameters
-    ----------
-    diversity_lambda : Trade-off. 1.0 = pure relevance, 0.0 = pure diversity.
-                       Default 0.65.
-    broad_weight     : Weight of broad_topic similarity. Default 0.6.
-    sub_weight       : Weight of sub_topic similarity. Default 0.4.
-    """
-
-    def __init__(
-        self,
-        diversity_lambda: float = 0.65,
-        broad_weight: float = 0.6,
-        sub_weight: float = 0.4,
-    ):
-        self.diversity_lambda = diversity_lambda
-        self.broad_weight = broad_weight
-        self.sub_weight = sub_weight
-
-    @staticmethod
-    def _jaccard(a: List[str], b: List[str]) -> float:
-        if not a or not b:
-            return 0.0
-        sa, sb = set(a), set(b)
-        intersection = len(sa & sb)
-        union = len(sa | sb)
-        return intersection / union if union > 0 else 0.0
-
-    def _combined_similarity(self, row_a: dict, row_b: dict) -> float:
-        broad_sim = self._jaccard(
-            row_a.get("broad_topics_list", []),
-            row_b.get("broad_topics_list", []),
-        )
-        sub_sim = self._jaccard(
-            row_a.get("sub_topics_list", []),
-            row_b.get("sub_topics_list", []),
-        )
-        return self.broad_weight * broad_sim + self.sub_weight * sub_sim
+    """Selects the top-N texts by composite_score."""
 
     def build_slate(
         self, scored_df: pd.DataFrame, slate_size: int = 2
     ) -> pd.DataFrame:
-        """
-        Select a slate of texts using MMR.
-
-        Parameters
-        ----------
-        scored_df  : DataFrame sorted by composite_score descending.
-        slate_size : Number of texts to select (default 2).
-
-        Returns
-        -------
-        DataFrame with the selected slate texts.
-        """
         if len(scored_df) == 0:
             return pd.DataFrame()
 
         if len(scored_df) <= slate_size:
             return scored_df.reset_index(drop=True)
 
-        # Consider top candidates for diversity pool
-        pool_size = min(3 * slate_size + 4, len(scored_df))
-        pool = scored_df.head(pool_size).to_dict("records")
-
-        # Text 1: highest composite score
-        selected = [pool[0]]
-        remaining = pool[1:]
-
-        # Text 2+: MMR selection
-        for _ in range(slate_size - 1):
-            if not remaining:
-                break
-
-            best_mmr = -float("inf")
-            best_idx = 0
-
-            for i, candidate in enumerate(remaining):
-                relevance = candidate["composite_score"]
-                max_sim = max(
-                    self._combined_similarity(candidate, sel)
-                    for sel in selected
-                )
-                mmr = (
-                    self.diversity_lambda * relevance
-                    - (1 - self.diversity_lambda) * max_sim
-                )
-                if mmr > best_mmr:
-                    best_mmr = mmr
-                    best_idx = i
-
-            selected.append(remaining.pop(best_idx))
-
-        return pd.DataFrame(selected).reset_index(drop=True)
+        return scored_df.head(slate_size).reset_index(drop=True)
 
 
 # ════════════════════════════════════════════════════════════
