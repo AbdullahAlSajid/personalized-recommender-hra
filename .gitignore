@@ -40,10 +40,9 @@ MANIFEST
 *.csv
 
 # JSON files that may have data
-topic_groq/*.json
-difficulty/*.json
-difficulty_lix/*.json
-difficulty_lix_v2/*.json
+research/recommender-experiments/topic_groq/*.json
+research/recommender-experiments/difficulty/*.json
+research/recommender-experiments/difficulty_lix_v2/*.json
 
 # data files
 data/
