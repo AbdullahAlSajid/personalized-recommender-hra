@@ -31,7 +31,7 @@ from app.models import (
     ReadingQuestionResponse,
     SessionFeedback,
 )
-from recommender.recommender.engine import (
+from app.recommender_engine import (
     LevelEstimator,
     ScoringEngine,
     SlateBuilder,
