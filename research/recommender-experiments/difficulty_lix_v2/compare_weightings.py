@@ -1,20 +1,3 @@
-"""
-compare_weightings.py
-
-Compares different anchor/pairwise weighting combinations for the
-final difficulty score. No API calls G«ц pure pandas and scipy.
-
-Usage:
-    python compare_weightings.py
-
-Inputs:
-    final_difficulty_scores.csv   G«ц combined scores from pairwise_pipeline.py
-
-Outputs:
-    weighting_comparison.csv      G«ц all weightings side by side per text
-    weighting_summary.csv         G«ц summary statistics per weighting
-"""
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -24,7 +7,7 @@ FINAL_CSV      = "final_difficulty_scores.csv"
 COMPARISON_CSV = "weighting_comparison.csv"
 SUMMARY_CSV    = "weighting_summary.csv"
 
-# Gц«Gц« Weightings to compare Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Weightings to compare GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 # Format: (label, anchor_weight, pairwise_weight)
 WEIGHTINGS = [
     ("pairwise_only",    0.00, 1.00),
@@ -34,7 +17,7 @@ WEIGHTINGS = [
     ("anchor_only",      1.00, 0.00),
 ]
 
-# Gц«Gц« Load data Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Load data GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
 if not Path(FINAL_CSV).exists():
     print(f"Error: {FINAL_CSV} not found. Run pairwise_pipeline.py first.")
@@ -50,7 +33,7 @@ reliable = df[df["reliable"]].copy()
 print(f"Loaded {len(df)} texts ({len(reliable)} reliable, "
       f"{len(df) - len(reliable)} flagged short)")
 
-# Gц«Gц« Compute scores for each weighting Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Compute scores for each weighting GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
 result = df[["sanity_text_id", "title", "word_count", "reliable",
              "anchor_score", "anchor_score_norm", "pairwise_score",
@@ -58,12 +41,12 @@ result = df[["sanity_text_id", "title", "word_count", "reliable",
 
 summary_rows = []
 
-print(f"\n{'Gт…'*70}")
+print(f"\n{'Gпњљпњљ'*70}")
 print(f"  WEIGHTING COMPARISON")
-print(f"{'Gт…'*70}")
+print(f"{'Gпњљпњљ'*70}")
 print(f"  {'Weighting':<22} {'Mean':>6} {'Std':>6} {'Min':>6} {'Max':>6} "
-      f"{'-д(anchor)':>10} {'-д(pairwise)':>12}")
-print(f"  {'Gц«'*68}")
+      f"{'-пњљ(anchor)':>10} {'-пњљ(pairwise)':>12}")
+print(f"  {'Gпњљпњљ'*68}")
 
 for label, aw, pw in WEIGHTINGS:
     col = f"score_{label}"
@@ -84,7 +67,7 @@ for label, aw, pw in WEIGHTINGS:
         df[df["reliable"]]["pairwise_score"], rel
     )
 
-    # Spread G«ц how many unique 0.5-step bins are used
+    # Spread Gпњљпњљ how many unique 0.5-step bins are used
     bins   = np.arange(1.0, 5.6, 0.5)
     binned = pd.cut(rel, bins=bins, include_lowest=True)
     n_bins_used = binned.nunique()
@@ -107,11 +90,11 @@ for label, aw, pw in WEIGHTINGS:
         "kendall_vs_pairwise": round(tau_pairwise, 4),
     })
 
-# Gц«Gц« Distribution per weighting Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Distribution per weighting GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
-print(f"\n{'Gц«'*70}")
-print(f"  DISTRIBUTION G«ц reliable texts only (n={len(reliable)})")
-print(f"{'Gц«'*70}")
+print(f"\n{'Gпњљпњљ'*70}")
+print(f"  DISTRIBUTION Gпњљпњљ reliable texts only (n={len(reliable)})")
+print(f"{'Gпњљпњљ'*70}")
 
 bins   = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.1]
 labels = ["1.0-1.4","1.5-1.9","2.0-2.4","2.5-2.9",
@@ -125,14 +108,14 @@ for label, aw, pw in WEIGHTINGS:
     dist       = binned.value_counts().sort_index()
     max_count  = dist.max() if dist.max() > 0 else 1
     for b, count in dist.items():
-        bar = "Gык" * int(count * 25 / max_count)
+        bar = "Gпњљпњљ" * int(count * 25 / max_count)
         print(f"    {b}  {count:>4}  {bar}")
 
-# Gц«Gц« Kendall's tau between all pairs of weightings Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Kendall's tau between all pairs of weightings GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
-print(f"\n{'Gц«'*70}")
-print(f"  KENDALL'S -д BETWEEN WEIGHTINGS (how similar are the rankings?)")
-print(f"{'Gц«'*70}")
+print(f"\n{'Gпњљпњљ'*70}")
+print(f"  KENDALL'S -пњљ BETWEEN WEIGHTINGS (how similar are the rankings?)")
+print(f"{'Gпњљпњљ'*70}")
 
 weighting_cols = [f"score_{label}" for label, _, _ in WEIGHTINGS]
 weighting_names = [label for label, _, _ in WEIGHTINGS]
@@ -143,7 +126,7 @@ print(f"  {'':22}", end="")
 for name in weighting_names:
     print(f"  {name[:12]:>12}", end="")
 print()
-print(f"  {'Gц«'*68}")
+print(f"  {'Gпњљпњљ'*68}")
 
 for i, (name_i, col_i) in enumerate(zip(weighting_names, weighting_cols)):
     print(f"  {name_i:<22}", end="")
@@ -155,16 +138,16 @@ for i, (name_i, col_i) in enumerate(zip(weighting_names, weighting_cols)):
             print(f"  {tau:>12.3f}", end="")
     print()
 
-# Gц«Gц« Rank correlation: top 10 and bottom 10 across weightings Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Rank correlation: top 10 and bottom 10 across weightings GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
-print(f"\n{'Gц«'*70}")
-print(f"  TOP 10 HARDEST TEXTS G«ц do weightings agree?")
-print(f"{'Gц«'*70}")
+print(f"\n{'Gпњљпњљ'*70}")
+print(f"  TOP 10 HARDEST TEXTS Gпњљпњљ do weightings agree?")
+print(f"{'Gпњљпњљ'*70}")
 print(f"  {'Title':<40}", end="")
 for label, _, _ in WEIGHTINGS:
     print(f"  {label[:10]:>10}", end="")
 print()
-print(f"  {'Gц«'*68}")
+print(f"  {'Gпњљпњљ'*68}")
 
 # Rank each weighting
 for label, _, _ in WEIGHTINGS:
@@ -181,14 +164,14 @@ for _, row in top10.iterrows():
         print(f"  {row[f'score_{label}']:>10.2f}", end="")
     print()
 
-print(f"\n{'Gц«'*70}")
-print(f"  BOTTOM 10 EASIEST TEXTS G«ц do weightings agree?")
-print(f"{'Gц«'*70}")
+print(f"\n{'Gпњљпњљ'*70}")
+print(f"  BOTTOM 10 EASIEST TEXTS Gпњљпњљ do weightings agree?")
+print(f"{'Gпњљпњљ'*70}")
 print(f"  {'Title':<40}", end="")
 for label, _, _ in WEIGHTINGS:
     print(f"  {label[:10]:>10}", end="")
 print()
-print(f"  {'Gц«'*68}")
+print(f"  {'Gпњљпњљ'*68}")
 
 bottom10 = df[df["reliable"]].nlargest(10, "rank_pairwise_only")
 for _, row in bottom10.iterrows():
@@ -198,7 +181,7 @@ for _, row in bottom10.iterrows():
         print(f"  {row[f'score_{label}']:>10.2f}", end="")
     print()
 
-# Gц«Gц« Save outputs Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«Gц«
+# GпњљпњљGпњљпњљ Save outputs GпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљGпњљпњљ
 
 result_cols = (
     ["sanity_text_id", "title", "word_count", "reliable",
@@ -210,8 +193,8 @@ result[result_cols].to_csv(COMPARISON_CSV, index=False, encoding="utf-8-sig")
 summary_df = pd.DataFrame(summary_rows)
 summary_df.to_csv(SUMMARY_CSV, index=False, encoding="utf-8-sig")
 
-print(f"\n  Saved Gе∆ {COMPARISON_CSV}")
-print(f"  Saved Gе∆ {SUMMARY_CSV}")
+print(f"\n  Saved Gпњљпњљ {COMPARISON_CSV}")
+print(f"  Saved Gпњљпњљ {SUMMARY_CSV}")
 print(f"\n  Recommendation: choose the weighting with:")
 print(f"    - Highest spread (max - min)")
 print(f"    - Most bins used")

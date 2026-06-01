@@ -1,10 +1,3 @@
-"""
-Recommender Service
-====================
-Stateless bridge between FastAPI endpoints and the recommender engine.
-Texts are loaded once and cached. Session state is reconstructed from DB per request.
-"""
-
 from __future__ import annotations
 
 import math

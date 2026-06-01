@@ -1,38 +1,3 @@
-"""
-Personalized Text Recommender for Norwegian Children's Texts
-============================================================
-Master's Thesis — University of Stavanger
-Target: Children aged 9–11
-Corpus: 157 texts with topic labels and difficulty scores (1.0–5.0)
-
-Architecture
-------------
-Session-based content recommender with two scoring components:
-  1. Topic match  — recall overlap between student interests and text broad_topics
-  2. Difficulty match — Gaussian kernel targeting the student's growth zone
-
-Weights transition across rounds as difficulty signal accumulates:
-  Round 1:  topic 1.00 | difficulty 0.00  (cold start, no signal)
-  Round 2:  topic 0.70 | difficulty 0.30  (one rating, still noisy)
-  Round 3+: topic 0.50 | difficulty 0.50  (two+ ratings, estimate stabilises)
-
-Slate diversity uses MMR (Carbonell & Goldstein, 1998) with broad_topic
-and sub_topic overlap to ensure the 2 shown texts cover different themes.
-
-Reading level is estimated from perceived difficulty ratings:
-  implied_level = text_difficulty + (3 - perceived_difficulty) × 0.5
-  estimated_level = mean(implied_levels)
-
-Research grounding
-------------------
-- Content-based cold start:  Adomavicius & Tuzhilin (2005)
-- Interest + difficulty:     Hsu, Hwang & Chang (2013), Wu & Huang (2023)
-- ZPD growth-zone targeting: Vygotsky (1978)
-- MMR diversity:             Carbonell & Goldstein (1998), Ziegler et al. (2005)
-- Adaptive level update:     Corbett & Anderson (1995)
-- Children's reading RS:     Kucirkova (2019, UiS), Walgermo et al. (2024, UiS)
-"""
-
 from __future__ import annotations
 
 import math
@@ -42,17 +7,11 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-
-# ════════════════════════════════════════════════════════════
-# Constants
-# ════════════════════════════════════════════════════════════
-
 BROAD_TOPICS: List[str] = [
     "Dyr", "Vitenskap", "Natur", "Kultur", "Historie", "Teknologi",
     "Idrett", "Mat", "Helse", "Samfunn", "Kunst", "Matematikk", "Fortelling",
 ]
 
-# Weight schedules per round
 WEIGHT_SCHEDULE: Dict[int, Tuple[float, float]] = {
     1: (1.00, 0.00),   # cold start — topic only
     2: (0.70, 0.30),   # one difficulty rating — topic dominant
@@ -69,16 +28,8 @@ def _get_weights(round_number: int) -> Tuple[float, float]:
     else:
         return WEIGHT_SCHEDULE[3]
 
-
-# ════════════════════════════════════════════════════════════
-# Corpus Loader
-# ════════════════════════════════════════════════════════════
-
 class Corpus:
-    """
-    Loads and prepares the merged dataset (results_with_topic_difficulty.csv).
-    Parses pipe-separated topic fields into lists and normalises types.
-    """
+    """Load the archived corpus data into a normalized DataFrame."""
 
     def __init__(self, data_path: str):
         df = pd.read_csv(data_path, encoding="utf-8-sig")
@@ -133,45 +84,14 @@ class Corpus:
             "topic_counts": topic_counts,
         }
 
-
-# ════════════════════════════════════════════════════════════
-# Level Estimator
-# ════════════════════════════════════════════════════════════
-
 class LevelEstimator:
-    """
-    Estimates student reading level from perceived difficulty ratings.
-
-    Formula (per text):
-        implied_level = text_difficulty + (3 - perceived_difficulty) × 0.5
-
-    The midpoint 3 means "about right for me."
-    Scaling factor 0.5 maps the full perceived range (1–5) to ±1.0.
-
-    Session estimate = simple mean of all implied levels.
-    No exponential weighting — with 5–7 observations, every data point matters.
-
-    Research basis: simplified Bayesian Knowledge Tracing
-    (Corbett & Anderson, 1995).
-    """
+    """Estimate reading level from perceived difficulty ratings."""
 
     def __init__(self):
         self.implied_levels: List[float] = []
 
     def update(self, text_difficulty: float, perceived_difficulty: int) -> float:
-        """
-        Record one observation and return the implied level for this observation.
-
-        Parameters
-        ----------
-        text_difficulty     : The text's final_difficulty (1.0–5.0)
-        perceived_difficulty: Student's rating of "how hard did you find it?" (1–5)
-
-        Returns
-        -------
-        The implied level computed from this observation (clipped to 1.0–5.0).
-        Access estimated_level property for the session mean across all observations.
-        """
+        """Record one observation and return the implied level."""
         if not (1 <= perceived_difficulty <= 5):
             raise ValueError(f"perceived_difficulty must be 1–5, got {perceived_difficulty}")
         if math.isnan(float(text_difficulty)):
@@ -202,28 +122,8 @@ class LevelEstimator:
             f"implied_levels = {[round(x, 2) for x in self.implied_levels]}"
         )
 
-
-# ════════════════════════════════════════════════════════════
-# Scoring Engine
-# ════════════════════════════════════════════════════════════
-
 class ScoringEngine:
-    """
-    Computes composite scores for candidate texts.
-
-    Two components:
-        topic_score     = |student_interests ∩ text_broad_topics| / |student_interests|
-        difficulty_score = Gaussian(text_diff; μ=estimated_level+0.2, σ=0.8)
-
-    The +0.2 growth-zone shift targets texts slightly above the student's
-    level, grounded in Vygotsky's ZPD (1978).
-
-    Parameters
-    ----------
-    difficulty_sigma : Gaussian tolerance. 0.8 means texts ±0.8 from level
-                       still score ~0.61.
-    growth_shift     : How much above estimated_level to target. Default 0.2.
-    """
+    """Score candidate texts by topic overlap and difficulty fit."""
 
     def __init__(self, difficulty_sigma: float = 0.8, growth_shift: float = 0.2):
         self.difficulty_sigma = difficulty_sigma
@@ -295,11 +195,6 @@ class ScoringEngine:
 
         return df.sort_values("composite_score", ascending=False)
 
-
-# ════════════════════════════════════════════════════════════
-# Slate Builder
-# ════════════════════════════════════════════════════════════
-
 class SlateBuilder:
     """Selects the top-N texts by composite_score."""
 
@@ -313,11 +208,6 @@ class SlateBuilder:
             return scored_df.reset_index(drop=True)
 
         return scored_df.head(slate_size).reset_index(drop=True)
-
-
-# ════════════════════════════════════════════════════════════
-# Session Manager
-# ════════════════════════════════════════════════════════════
 
 @dataclass
 class ReadingEvent:
@@ -340,22 +230,7 @@ class SlateEvent:
 
 
 class SessionManager:
-    """
-    Manages one anonymous session from start to finish.
-
-    Orchestrates:
-        1. Filter candidates (reliable, unseen, topic-matching)
-        2. Score candidates (topic + difficulty, round-dependent weights)
-        3. Build slate of 2 (MMR diversity with broad + sub topics)
-        4. Record feedback and update reading level
-
-    Parameters
-    ----------
-    corpus         : Corpus instance with the loaded dataset.
-    interests      : Student's selected interests (3+ broad topics).
-    scoring_engine : ScoringEngine instance (optional, creates default).
-    slate_builder  : SlateBuilder instance (optional, creates default).
-    """
+    """Manage session state, candidate filtering, and recommendation rounds."""
 
     def __init__(
         self,
@@ -382,8 +257,6 @@ class SessionManager:
         self.reading_history: List[ReadingEvent] = []
         self.slate_history: List[SlateEvent] = []
 
-    # ── Candidate filtering ───────────────────────────────
-
     def _get_candidates(self) -> pd.DataFrame:
         """
         Filter corpus to eligible candidates:
@@ -402,8 +275,6 @@ class SessionManager:
         )]
 
         return df
-
-    # ── Slate generation ──────────────────────────────────
 
     def get_recommendations(self) -> pd.DataFrame:
         """
@@ -427,8 +298,6 @@ class SessionManager:
         slate = self.slate_builder.build_slate(scored, slate_size=2)
         return slate
 
-    # ── Refresh ───────────────────────────────────────────
-
     def handle_refresh(self, shown_text_ids: List[str]) -> pd.DataFrame:
         """
         Mark shown texts as seen, log the refresh, return new slate.
@@ -445,8 +314,6 @@ class SessionManager:
         ))
 
         return self.get_recommendations()
-
-    # ── Record reading ────────────────────────────────────
 
     def record_reading(
         self,
@@ -502,8 +369,6 @@ class SessionManager:
         # Advance round
         self.round_number += 1
 
-    # ── Explanation (Norwegian) ───────────────────────────
-
     def explain(self, text_row: dict) -> str:
         """Norwegian-language explanation for a recommendation."""
         title = text_row.get("title", "")
@@ -531,8 +396,6 @@ class SessionManager:
                 lines.append(f"    Litt lettere — god for flytsone-lesing")
 
         return "\n".join(lines)
-
-    # ── Session summary ───────────────────────────────────
 
     def session_summary(self) -> dict:
         """Return a full summary dict for logging/evaluation."""

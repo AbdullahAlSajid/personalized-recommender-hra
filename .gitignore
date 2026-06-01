@@ -45,7 +45,8 @@ difficulty/*.json
 difficulty_lix/*.json
 difficulty_lix_v2/*.json
 
-
+# data files
+data/
 
 
 # Installer logs

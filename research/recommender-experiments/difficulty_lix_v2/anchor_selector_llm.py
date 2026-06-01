@@ -1,26 +1,3 @@
-"""
-anchor_selector.py
-
-Uses Groq llama-3.3-70b-versatile to:
-  Stage 1 GÇö Evaluate all 15 anchor candidates (3 per difficulty band)
-  Stage 2 GÇö Select the single best anchor per band
-
-Inputs:
-    anchor_candidates_shortlist.csv              GÇö from preliminary scoring script
-    all_texts_preliminary_difficulty_scores.csv  GÇö for full text bodies
-
-Outputs:
-    anchor_candidates_evaluated.csv   GÇö all 15 candidates with LLM ratings
-    final_anchors.csv                 GÇö one row per band (5 rows total)
-
-Usage:
-    pip install groq pandas python-dotenv
-    python anchor_selector.py
-
-    # Skip evaluation if already done, re-run selection only:
-    python anchor_selector.py --select-only
-"""
-
 import argparse
 import json
 import os
@@ -33,7 +10,7 @@ import pandas as pd
 from groq import Groq
 from dotenv import load_dotenv
 
-# GöÇGöÇ Config GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 SHORTLIST_CSV   = "anchor_candidates_shortlist_v2.csv"
 FULL_SCORES_CSV = "all_texts_lix_scores_v2.csv"
@@ -65,7 +42,7 @@ BAND_TARGET_DIFFICULTY = {
     "Band_5": 5,
 }
 
-# GöÇGöÇ Prompts GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Prompts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 EVALUATION_SYSTEM = """
 You are helping with readability-based anchor selection for Norwegian school texts
@@ -90,25 +67,25 @@ Dimension definitions:
   *** The following three dimensions are particularly important as they
   capture what surface readability formulas cannot measure ***
 
-  vocab_difficulty         GÇö complexity and rarity of vocabulary; presence of
+  vocab_difficulty         â€” complexity and rarity of vocabulary; presence of
                              domain-specific, technical, or uncommon words that
                              a child would not encounter in everyday language
-  background_knowledge     GÇö how much prior knowledge a child needs to understand
+  background_knowledge     â€” how much prior knowledge a child needs to understand
                              the text; domain expertise required; assumed
                              familiarity with concepts, events, or fields
-  abstractness             GÇö how abstract vs concrete the ideas are; whether
+  abstractness             â€” how abstract vs concrete the ideas are; whether
                              concepts can be visualized or touched vs require
                              inference and conceptual understanding
 
-  sentence_complexity      GÇö sentence length, subordinate clauses, syntactic depth
-  cohesion_structure       GÇö how clearly the text guides the reader; logical flow
+  sentence_complexity      â€” sentence length, subordinate clauses, syntactic depth
+  cohesion_structure       â€” how clearly the text guides the reader; logical flow
                              and transitions between ideas
-  inferential_demand       GÇö how much a reader must infer beyond what is stated
+  inferential_demand       â€” how much a reader must infer beyond what is stated
 
 Anchor suitability (overall_anchor_suitability_1to5):
   A good anchor is unambiguously representative of its difficulty band,
   well-formed, complete, and typical of Norwegian children's educational texts.
-  Penalize heavily: texts under 100 words GÇö these are fragments, not
+  Penalize heavily: texts under 100 words â€” these are fragments, not
   representative anchors regardless of difficulty score.
   Penalize: texts that are mostly lists or images, borderline texts that
   could plausibly belong in an adjacent band.
@@ -116,7 +93,7 @@ Anchor suitability (overall_anchor_suitability_1to5):
 Rules:
   - Judge for an 9-11-year-old reader, not an adult.
   - Do not confuse interesting topic with high difficulty.
-  - Weight vocab_difficulty, background_knowledge, and abstractness heavily GÇö
+  - Weight vocab_difficulty, background_knowledge, and abstractness heavily â€”
     these dimensions distinguish texts that look similar on surface features
     but differ significantly in actual comprehension demand for children.
   - A text about a familiar everyday topic with simple vocabulary is easier
@@ -211,7 +188,7 @@ def build_selection_prompt(band: str, band_label: str, candidates: list) -> str:
     return "\n".join(lines)
 
 
-# GöÇGöÇ API helper GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ API helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def call_groq(client: Groq, system: str, user: str) -> str:
     for attempt in range(1, MAX_RETRIES + 1):
@@ -229,7 +206,7 @@ def call_groq(client: Groq, system: str, user: str) -> str:
         except Exception as e:
             print(f"    [!] API error (attempt {attempt}/{MAX_RETRIES}): {e}")
             if "rate_limit" in str(e).lower() or "429" in str(e):
-                print("    Rate limited GÇö waiting 60s...")
+                print("    Rate limited â€” waiting 60s...")
                 time.sleep(60)
             elif attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY * attempt)
@@ -278,7 +255,7 @@ def normalize_evaluation(result: dict) -> dict:
     return out
 
 
-# GöÇGöÇ Stage 1: Evaluate GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Stage 1: Evaluate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def run_evaluation(client: Groq, shortlist: pd.DataFrame, full_scores: pd.DataFrame) -> pd.DataFrame:
     full_map = full_scores.set_index(TEXT_ID_COL).to_dict("index")
@@ -288,9 +265,9 @@ def run_evaluation(client: Groq, shortlist: pd.DataFrame, full_scores: pd.DataFr
             shortlist[col] = ""
 
     total = len(shortlist)
-    print(f"\n{'GöÇ'*62}")
-    print(f"  Stage 1 GÇö Evaluating {total} candidates ({total} API calls)")
-    print(f"{'GöÇ'*62}")
+    print(f"\n{'â”€'*62}")
+    print(f"  Stage 1 â€” Evaluating {total} candidates ({total} API calls)")
+    print(f"{'â”€'*62}")
 
     for i, (idx, row) in enumerate(shortlist.iterrows(), 1):
         text_id    = str(row[TEXT_ID_COL])
@@ -308,7 +285,7 @@ def run_evaluation(client: Groq, shortlist: pd.DataFrame, full_scores: pd.DataFr
             "lexical_diversity":   full_row.get("lexical_diversity",   row.get("lexical_diversity", "?")),
         }
 
-        print(f"  [{i}/{total}] {band_label:<12} GÇö {title[:48]}")
+        print(f"  [{i}/{total}] {band_label:<12} â€” {title[:48]}")
 
         prompt = build_evaluation_prompt(band_label, title, text, stats)
 
@@ -339,7 +316,7 @@ def run_evaluation(client: Groq, shortlist: pd.DataFrame, full_scores: pd.DataFr
                     shortlist.at[idx, "llm_status"] = "failed"
                     shortlist.at[idx, "llm_error"]  = msg
 
-        # Save after every row GÇö progress is never lost on crash
+        # Save after every row â€” progress is never lost on crash
         shortlist.to_csv(EVALUATED_CSV, index=False, encoding="utf-8-sig")
 
         if i < total:
@@ -348,14 +325,14 @@ def run_evaluation(client: Groq, shortlist: pd.DataFrame, full_scores: pd.DataFr
     return shortlist
 
 
-# GöÇGöÇ Stage 2: Select GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Stage 2: Select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def run_selection(client: Groq, evaluated: pd.DataFrame) -> pd.DataFrame:
     anchor_rows = []
 
-    print(f"\n{'GöÇ'*62}")
-    print(f"  Stage 2 GÇö Selecting one anchor per band (5 API calls)")
-    print(f"{'GöÇ'*62}")
+    print(f"\n{'â”€'*62}")
+    print(f"  Stage 2 â€” Selecting one anchor per band (5 API calls)")
+    print(f"{'â”€'*62}")
 
     for band in BAND_ORDER:
         label   = BAND_LABELS[band]
@@ -363,12 +340,12 @@ def run_selection(client: Groq, evaluated: pd.DataFrame) -> pd.DataFrame:
         target  = BAND_TARGET_DIFFICULTY[band]
 
         if band_df.empty:
-            print(f"\n  [!] No candidates found for {band} GÇö skipping")
+            print(f"\n  [!] No candidates found for {band} â€” skipping")
             continue
 
         candidates = band_df.to_dict("records")
 
-        print(f"\n  {band} ({label}) GÇö candidates:")
+        print(f"\n  {band} ({label}) â€” candidates:")
         for c in candidates:
             print(
                 f"    [{c.get('candidate_rank_within_band','?')}] "
@@ -393,10 +370,10 @@ def run_selection(client: Groq, evaluated: pd.DataFrame) -> pd.DataFrame:
             if not match.empty:
                 selected_row = match.iloc[0].to_dict()
             else:
-                print(f"    [!] LLM returned unknown id '{selected_id}' GÇö using fallback")
+                print(f"    [!] LLM returned unknown id '{selected_id}' â€” using fallback")
 
         except Exception as e:
-            print(f"    [!] LLM selection failed: {e} GÇö using fallback")
+            print(f"    [!] LLM selection failed: {e} â€” using fallback")
 
         # Fallback: highest suitability, tiebreak by closest difficulty to band target
         if selected_row is None:
@@ -417,7 +394,7 @@ def run_selection(client: Groq, evaluated: pd.DataFrame) -> pd.DataFrame:
         selected_row["selection_reason"]         = selection_reason
         anchor_rows.append(selected_row)
 
-        print(f"  GåÆ Selected: {str(selected_row.get('title',''))[:52]}")
+        print(f"  â†’ Selected: {str(selected_row.get('title',''))[:52]}")
         if selection_reason:
             print(f"    Reason:   {selection_reason[:100]}")
 
@@ -426,14 +403,14 @@ def run_selection(client: Groq, evaluated: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(anchor_rows)
 
 
-# GöÇGöÇ Summary GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def print_summary(anchors: pd.DataFrame):
-    print(f"\n{'GòÉ'*62}")
+    print(f"\n{'â•'*62}")
     print(f"  FINAL ANCHORS")
-    print(f"{'GòÉ'*62}")
+    print(f"{'â•'*62}")
     print(f"  {'Band':<10} {'Label':<12} {'Diff':>5} {'Suit':>5}  Title")
-    print(f"  {'GöÇ'*60}")
+    print(f"  {'â”€'*60}")
     for _, row in anchors.iterrows():
         print(
             f"  {str(row.get('difficulty_band','')):<10} "
@@ -442,8 +419,8 @@ def print_summary(anchors: pd.DataFrame):
             f"{str(row.get('overall_anchor_suitability_1to5','?')):>4}/5  "
             f"{str(row.get('title',''))[:38]}"
         )
-    print(f"\n  Saved GåÆ {FINAL_CSV}")
-    print(f"  Saved GåÆ {EVALUATED_CSV}")
+    print(f"\n  Saved â†’ {FINAL_CSV}")
+    print(f"  Saved â†’ {EVALUATED_CSV}")
     print(f"\n  IMPORTANT: Open final_anchors.csv and read each selected text.")
     print(f"  Confirm the choices make sense before running the difficulty")
     print(f"  scoring pipeline. If a selection looks wrong:")
@@ -451,7 +428,7 @@ def print_summary(anchors: pd.DataFrame):
     print(f"    2. Re-run: python anchor_selector.py --select-only\n")
 
 
-# GöÇGöÇ Main GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def main():
     parser = argparse.ArgumentParser(description="LLM-assisted anchor selection.")
@@ -470,7 +447,7 @@ def main():
     client = Groq(api_key=api_key)
     print(f"  Model: {MODEL_NAME}")
 
-    # GöÇGöÇ Stage 1 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # â”€â”€ Stage 1 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if args.select_only:
         if not Path(EVALUATED_CSV).exists():
             print(f"Error: {EVALUATED_CSV} not found. Run without --select-only first.")
@@ -489,9 +466,9 @@ def main():
         print(f"  Loaded {len(full_scores)} full text records")
 
         evaluated = run_evaluation(client, shortlist, full_scores)
-        print(f"\n  Evaluations complete GåÆ {EVALUATED_CSV}")
+        print(f"\n  Evaluations complete â†’ {EVALUATED_CSV}")
 
-    # GöÇGöÇ Stage 2 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # â”€â”€ Stage 2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     anchors = run_selection(client, evaluated)
     anchors.to_csv(FINAL_CSV, index=False, encoding="utf-8-sig")
 

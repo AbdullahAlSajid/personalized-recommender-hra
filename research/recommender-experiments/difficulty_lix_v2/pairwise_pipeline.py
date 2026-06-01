@@ -1,37 +1,3 @@
-"""
-pairwise_pipeline.py
-
-Runs all pairwise comparisons across all 157 Norwegian children's texts
-to produce an independent difficulty ranking, then combines with anchor
-scores from difficulty_scores_v2.csv.
-
-Total comparisons: 157 +ù 156 / 2 = 12,246 API calls
-Estimated time:    ~20 minutes on Groq paid tier (1K RPM)
-
-Usage:
-    pip install groq pandas scipy python-dotenv
-
-    # Run full pairwise comparison:
-    python pairwise_pipeline.py
-
-    # Skip comparison, compute scores from existing checkpoint:
-    python pairwise_pipeline.py --scores-only
-
-    # Combine anchor + pairwise into final scores (no API calls):
-    python pairwise_pipeline.py --combine-only
-
-Inputs:
-    all_texts_lix_scores_v2.csv    GÇö all 157 texts with full text bodies
-    difficulty_scores_v2.csv       GÇö anchor-based scores from Stage 1
-
-Outputs:
-    pairwise_checkpoint.json       GÇö auto-saved progress after every pair
-    pairwise_results_full.csv      GÇö all 12,246 comparison results
-    pairwise_scores.csv            GÇö win counts + normalized 1.0-5.0 per text
-    final_difficulty_scores.csv    GÇö combined anchor + pairwise scores
-    validation_metrics.json        GÇö Kendall's tau between the two methods
-"""
-
 import argparse
 import json
 import os
@@ -46,7 +12,7 @@ from scipy import stats as scipy_stats
 from groq import Groq
 from dotenv import load_dotenv
 
-# GöÇGöÇ Config GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Config Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 ALL_TEXTS_CSV     = "all_texts_lix_scores_v2.csv"
 ANCHOR_SCORES_CSV = "difficulty_scores_v2.csv"
@@ -62,9 +28,9 @@ MODEL_NAME        = "llama-3.3-70b-versatile"
 TEMPERATURE       = 0.1
 MAX_RETRIES       = 3
 RETRY_DELAY       = 5
-SLEEP_BETWEEN     = 0.1     # paid tier GÇö 1K RPM
+SLEEP_BETWEEN     = 0.1     # paid tier Gï¿½ï¿½ 1K RPM
 
-# GöÇGöÇ Prompt GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Prompt Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 PAIRWISE_SYSTEM = """
 You are an expert in Norwegian language education and reading difficulty assessment
@@ -74,11 +40,11 @@ You will receive two Norwegian texts labeled A and B.
 Decide which one is harder to read and understand for a 9-11-year-old Norwegian child.
 
 Consider these dimensions in order of importance:
-  1. Vocabulary difficulty    GÇö domain-specific, technical, or uncommon words
-  2. Background knowledge     GÇö prior knowledge a 9-11-year-old needs
-  3. Abstractness             GÇö concrete vs abstract ideas and concepts
-  4. Sentence complexity      GÇö length and syntactic depth
-  5. Inferential demand       GÇö how much the reader must infer
+  1. Vocabulary difficulty    Gï¿½ï¿½ domain-specific, technical, or uncommon words
+  2. Background knowledge     Gï¿½ï¿½ prior knowledge a 9-11-year-old needs
+  3. Abstractness             Gï¿½ï¿½ concrete vs abstract ideas and concepts
+  4. Sentence complexity      Gï¿½ï¿½ length and syntactic depth
+  5. Inferential demand       Gï¿½ï¿½ how much the reader must infer
 
 Rules:
   - Judge for a 9-11-year-old Norwegian reader, not an adult
@@ -110,7 +76,7 @@ def build_pairwise_prompt(text_a: dict, text_b: dict) -> str:
         f"TEXT A:\n"
         f"Title: {text_a.get('title', '')}\n"
         f"{truncate(text_a)}\n\n"
-        f"{'GöÇ'*50}\n\n"
+        f"{'Gï¿½ï¿½'*50}\n\n"
         f"TEXT B:\n"
         f"Title: {text_b.get('title', '')}\n"
         f"{truncate(text_b)}\n\n"
@@ -118,7 +84,7 @@ def build_pairwise_prompt(text_a: dict, text_b: dict) -> str:
     )
 
 
-# GöÇGöÇ API helper GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ API helper Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def call_groq(client: Groq, system: str, user: str) -> str:
     for attempt in range(1, MAX_RETRIES + 1):
@@ -136,7 +102,7 @@ def call_groq(client: Groq, system: str, user: str) -> str:
         except Exception as e:
             print(f"    [!] API error (attempt {attempt}/{MAX_RETRIES}): {e}")
             if "rate_limit" in str(e).lower() or "429" in str(e):
-                print("    Rate limited GÇö waiting 60s...")
+                print("    Rate limited Gï¿½ï¿½ waiting 60s...")
                 time.sleep(60)
             elif attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY * attempt)
@@ -158,7 +124,7 @@ def parse_json(raw: str) -> dict:
     raise ValueError(f"Could not parse JSON from: {raw[:200]}")
 
 
-# GöÇGöÇ Checkpoint helpers GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Checkpoint helpers Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def load_checkpoint() -> dict:
     if Path(CHECKPOINT_JSON).exists():
@@ -172,7 +138,7 @@ def save_checkpoint(results: dict):
         json.dump(results, f, ensure_ascii=False, indent=2)
 
 
-# GöÇGöÇ Stage 1: Pairwise comparisons GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Stage 1: Pairwise comparisons Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def run_pairwise(client: Groq, texts: list) -> pd.DataFrame:
     text_map  = {t[TEXT_ID_COL]: t for t in texts}
@@ -187,13 +153,13 @@ def run_pairwise(client: Groq, texts: list) -> pd.DataFrame:
         if (a, b) not in done_pairs and (b, a) not in done_pairs
     ]
 
-    print(f"\n{'GöÇ'*62}")
+    print(f"\n{'Gï¿½ï¿½'*62}")
     print(f"  Pairwise comparison")
     print(f"  Total pairs:     {total}")
     print(f"  Already done:    {len(done_pairs)}")
     print(f"  Remaining:       {len(remaining)}")
     print(f"  Est. time:       ~{len(remaining) // 600 + 1} minutes")
-    print(f"{'GöÇ'*62}")
+    print(f"{'Gï¿½ï¿½'*62}")
 
     for i, (id_a, id_b) in enumerate(remaining, len(done_pairs) + 1):
         text_a  = text_map.get(id_a, {})
@@ -261,11 +227,11 @@ def run_pairwise(client: Groq, texts: list) -> pd.DataFrame:
 
     results_df = pd.DataFrame(list(checkpoint.values()))
     results_df.to_csv(RESULTS_CSV, index=False, encoding="utf-8-sig")
-    print(f"\n  Comparisons complete GåÆ {RESULTS_CSV}")
+    print(f"\n  Comparisons complete Gï¿½ï¿½ {RESULTS_CSV}")
     return results_df
 
 
-# GöÇGöÇ Stage 2: Compute pairwise scores GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Stage 2: Compute pairwise scores Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def compute_pairwise_scores(results_df: pd.DataFrame, texts: list) -> pd.DataFrame:
     all_ids = [t[TEXT_ID_COL] for t in texts]
@@ -305,18 +271,18 @@ def compute_pairwise_scores(results_df: pd.DataFrame, texts: list) -> pd.DataFra
     scores_df = pd.DataFrame(rows).sort_values("pairwise_score", ascending=False)
     scores_df.to_csv(PAIRWISE_SCORES, index=False, encoding="utf-8-sig")
 
-    print(f"\n{'GöÇ'*55}")
+    print(f"\n{'Gï¿½ï¿½'*55}")
     print(f"  PAIRWISE SCORE DISTRIBUTION")
-    print(f"{'GöÇ'*55}")
+    print(f"{'Gï¿½ï¿½'*55}")
     print(f"  Mean:  {scores_df['pairwise_score'].mean():.2f}")
     print(f"  Std:   {scores_df['pairwise_score'].std():.2f}")
     print(f"  Min:   {scores_df['pairwise_score'].min():.2f}")
     print(f"  Max:   {scores_df['pairwise_score'].max():.2f}")
-    print(f"\n  Saved GåÆ {PAIRWISE_SCORES}")
+    print(f"\n  Saved Gï¿½ï¿½ {PAIRWISE_SCORES}")
     return scores_df
 
 
-# GöÇGöÇ Stage 3: Combine anchor + pairwise GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Stage 3: Combine anchor + pairwise Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def combine_scores(anchor_df: pd.DataFrame, pairwise_df: pd.DataFrame) -> pd.DataFrame:
     anchor_slim = anchor_df[[TEXT_ID_COL, "title", "difficulty",
@@ -355,20 +321,20 @@ def combine_scores(anchor_df: pd.DataFrame, pairwise_df: pd.DataFrame) -> pd.Dat
 
     merged.to_csv(FINAL_SCORES_CSV, index=False, encoding="utf-8-sig")
 
-    print(f"\n{'GöÇ'*55}")
+    print(f"\n{'Gï¿½ï¿½'*55}")
     print(f"  FINAL DIFFICULTY DISTRIBUTION")
-    print(f"{'GöÇ'*55}")
+    print(f"{'Gï¿½ï¿½'*55}")
     print(f"  Mean:       {merged['final_difficulty'].mean():.2f}")
     print(f"  Std:        {merged['final_difficulty'].std():.2f}")
     print(f"  Min:        {merged['final_difficulty'].min():.2f}")
     print(f"  Max:        {merged['final_difficulty'].max():.2f}")
     print(f"  Reliable:   {merged['reliable'].sum()} texts")
     print(f"  Flagged:    {(~merged['reliable']).sum()} texts (< 100 words)")
-    print(f"\n  Saved GåÆ {FINAL_SCORES_CSV}")
+    print(f"\n  Saved Gï¿½ï¿½ {FINAL_SCORES_CSV}")
     return merged
 
 
-# GöÇGöÇ Kendall's tau GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Kendall's tau Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def compute_kendall(merged: pd.DataFrame) -> dict:
     valid = merged[
@@ -393,24 +359,24 @@ def compute_kendall(merged: pd.DataFrame) -> dict:
         ),
     }
 
-    print(f"\n{'GòÉ'*55}")
-    print(f"  VALIDATION GÇö KENDALL'S -ä")
-    print(f"{'GòÉ'*55}")
+    print(f"\n{'Gï¿½ï¿½'*55}")
+    print(f"  VALIDATION Gï¿½ï¿½ KENDALL'S -ï¿½")
+    print(f"{'Gï¿½ï¿½'*55}")
     print(f"  Texts (reliable only):  {metrics['n_texts']}")
-    print(f"  Kendall's -ä:            {metrics['kendall_tau']}")
+    print(f"  Kendall's -ï¿½:            {metrics['kendall_tau']}")
     print(f"  p-value:                {metrics['p_value']}")
     print(f"  Interpretation:         {metrics['interpretation']}")
-    print(f"\n  -ä GëÑ 0.7 = strong agreement GÇö both methods consistent")
-    print(f"  -ä GëÑ 0.5 = moderate agreement GÇö acceptable for thesis")
-    print(f"  -ä < 0.5 = weak agreement GÇö investigate discrepancies")
+    print(f"\n  -ï¿½ Gï¿½ï¿½ 0.7 = strong agreement Gï¿½ï¿½ both methods consistent")
+    print(f"  -ï¿½ Gï¿½ï¿½ 0.5 = moderate agreement Gï¿½ï¿½ acceptable for thesis")
+    print(f"  -ï¿½ < 0.5 = weak agreement Gï¿½ï¿½ investigate discrepancies")
 
     with open(METRICS_JSON, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2)
-    print(f"\n  Saved GåÆ {METRICS_JSON}")
+    print(f"\n  Saved Gï¿½ï¿½ {METRICS_JSON}")
     return metrics
 
 
-# GöÇGöÇ Main GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½ Main Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def main():
     parser = argparse.ArgumentParser(description="Full pairwise difficulty pipeline.")
@@ -438,7 +404,7 @@ def main():
     texts        = all_texts_df.to_dict("records")
     print(f"  Loaded {len(texts)} texts")
 
-    # GöÇGöÇ Run comparisons GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Run comparisons Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     if args.combine_only:
         if not Path(PAIRWISE_SCORES).exists():
             print(f"Error: {PAIRWISE_SCORES} not found.")
@@ -464,7 +430,7 @@ def main():
         results_df         = run_pairwise(client, texts)
         pairwise_scores_df = compute_pairwise_scores(results_df, texts)
 
-    # GöÇGöÇ Combine GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Combine Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     if not Path(ANCHOR_SCORES_CSV).exists():
         print(f"Error: {ANCHOR_SCORES_CSV} not found.")
         print(f"Run difficulty_pipeline.py first.")

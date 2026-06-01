@@ -1,26 +1,3 @@
-"""
-topic_pipeline.py
-=================
-Pipeline for extracting and clustering topics from Norwegian children's texts.
-Uses Groq API (llama-3.3-70b-versatile) GÇö free tier, no credit card required.
-Sign up at: https://console.groq.com
-
-Stages:
-  1. Load & preprocess TSV (fix encoding, strip markdown, drop empty rows)
-  2. Per-text topic extraction (batched Groq API calls, with checkpointing)
-  3. Broad topic clustering (1-2 API calls)
-  4. Export final CSV
-
-Usage:
-  pip install groq pandas
-  export GROQ_API_KEY=gsk_your_key_here
-  python topic_pipeline.py --input texts.tsv --output results.csv
-
-Checkpointing:
-  Intermediate results are saved to topics_checkpoint.json after each batch.
-  If the script is interrupted, re-running it will resume from where it left off.
-"""
-
 import argparse
 import json
 import os
@@ -33,9 +10,9 @@ from groq import Groq
 import pandas as pd
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # CONFIG
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 MODEL = "llama-3.3-70b-versatile"
 BATCH_SIZE = 10
@@ -44,12 +21,12 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 1 GÇö LOAD & PREPROCESS
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 1 Gï¿½ï¿½ LOAD & PREPROCESS
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def fix_encoding(text: str) -> str:
-    """Fix UTF-8 text mis-decoded as Latin-1. e.g. '+â-£rner' GåÆ '+ÿrner'"""
+    """Fix UTF-8 text mis-decoded as Latin-1. e.g. '+ï¿½-ï¿½rner' Gï¿½ï¿½ '+ï¿½rner'"""
     try:
         return text.encode("latin-1").decode("utf-8")
     except (UnicodeDecodeError, UnicodeEncodeError):
@@ -59,7 +36,7 @@ def fix_encoding(text: str) -> str:
 def strip_markdown(text: str) -> str:
     """Strip markdown syntax, keep plain text content."""
     text = re.sub(r'!\[.*?\]\(.*?\)', '', text)           # remove images
-    text = re.sub(r'\[([^\]]+)\]\([^\)]*\)', r'\1', text) # links GåÆ text
+    text = re.sub(r'\[([^\]]+)\]\([^\)]*\)', r'\1', text) # links Gï¿½ï¿½ text
     text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)  # headings
     text = re.sub(r'[*_]{1,3}([^*_]+)[*_]{1,3}', r'\1', text)  # bold/italic
     text = re.sub(r'\n{3,}', '\n\n', text)
@@ -122,7 +99,7 @@ def load_and_preprocess(filepath: str) -> list[dict]:
     # Normalize column names
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
 
-    # GöÇGöÇ Drop empty rows GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Drop empty rows Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     # A row is considered empty if both 'title' and 'body' are missing/NaN.
     # This handles Excel exports that pad files with blank rows.
     before = len(df)
@@ -137,19 +114,19 @@ def load_and_preprocess(filepath: str) -> list[dict]:
     df = df.reset_index(drop=True)
     dropped = before - len(df)
     if dropped:
-        print(f"  Dropped {dropped} empty rows GåÆ {len(df)} valid rows remaining.")
+        print(f"  Dropped {dropped} empty rows Gï¿½ï¿½ {len(df)} valid rows remaining.")
 
     texts = [preprocess_row(row) for _, row in df.iterrows()]
     print(f"  Preprocessed {len(texts)} texts.")
     return texts
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 2 GÇö PER-TEXT TOPIC EXTRACTION
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 2 Gï¿½ï¿½ PER-TEXT TOPIC EXTRACTION
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert p+Ñ +Ñ klassifisere norske barnetekster.
-For hver tekst du mottar, skal du returnere KUN et JSON-objekt GÇô ingen forklaring, ingen markdown-blokker.
+EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ +ï¿½ klassifisere norske barnetekster.
+For hver tekst du mottar, skal du returnere KUN et JSON-objekt Gï¿½ï¿½ ingen forklaring, ingen markdown-blokker.
 
 Format:
 {
@@ -158,10 +135,10 @@ Format:
 }
 
 Regler:
-- Skriv alle emner p+Ñ norsk bokm+Ñl
-- main_topic skal fange tekstens prim+ªre tema
+- Skriv alle emner p+ï¿½ norsk bokm+ï¿½l
+- main_topic skal fange tekstens prim+ï¿½re tema
 - sub_topics: 2-4 underkategorier eller relaterte temaer
-- V+ªr spesifikk nok til at emnene er meningsfulle, men ikke for smale
+- V+ï¿½r spesifikk nok til at emnene er meningsfulle, men ikke for smale
 - Eksempel for en tekst om ++rner: {"main_topic": "Rovfugler", "sub_topics": ["Natur og dyreliv", "Norsk fauna", "Kultur og symbolikk"]}"""
 
 
@@ -210,7 +187,7 @@ def extract_topics_for_text(client: Groq, text: dict) -> dict:
         except Exception as e:
             print(f"    [!] API error for '{text['title']}' (attempt {attempt}): {e}")
             if "rate_limit" in str(e).lower() or "429" in str(e):
-                print(f"    Rate limit hit GÇö waiting 60s...")
+                print(f"    Rate limit hit Gï¿½ï¿½ waiting 60s...")
                 time.sleep(60)
                 continue
 
@@ -253,13 +230,13 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
         batch_num    = (batch_start // BATCH_SIZE) + 1
         total_batches = (len(remaining) + BATCH_SIZE - 1) // BATCH_SIZE
 
-        print(f"  Batch {batch_num}/{total_batches} GÇö {len(batch)} texts...")
+        print(f"  Batch {batch_num}/{total_batches} Gï¿½ï¿½ {len(batch)} texts...")
 
         for text in batch:
             result = extract_topics_for_text(client, text)
             results[text["text_id"]] = result
             done  += 1
-            status = "G£ô" if not result["extraction_error"] else "G£ù"
+            status = "Gï¿½ï¿½" if not result["extraction_error"] else "Gï¿½ï¿½"
             print(f"    [{done}/{total}] {status} {text['title'][:50]}")
 
         save_checkpoint(results)
@@ -271,26 +248,26 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
     return list(results.values())
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 3 GÇö BROAD TOPIC CLUSTERING
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 3 Gï¿½ï¿½ BROAD TOPIC CLUSTERING
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-CLUSTERING_SYSTEM_PROMPT = """Du er en ekspert p+Ñ +Ñ lage emnestruktur for norske barnetekster.
+CLUSTERING_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ +ï¿½ lage emnestruktur for norske barnetekster.
 Du vil motta en liste med tekster og deres emner.
 
-Oppgaven din er +Ñ:
-1. Foresl+Ñ N+ÿYAKTIG 12-15 brede overordnede kategorier for barnetekster
+Oppgaven din er +ï¿½:
+1. Foresl+ï¿½ N+ï¿½YAKTIG 12-15 brede overordnede kategorier for barnetekster
 2. Tildele hver tekst 1-3 av disse kategoriene
 
 Viktige regler for kategoriene:
-- Lag N+ÿYAKTIG 12-15 kategorier GÇö ikke f+ªrre, ikke flere
-- Kategoriene skal v+ªre TYDELIG FORSKJELLIGE fra hverandre GÇö unng+Ñ overlapp
-  (f.eks. IKKE ha b+Ñde "Natur og dyr" og "Dyreliv og ++kologi" GÇö sl+Ñ dem sammen til +¬n)
-- Hver kategori skal dekke minst 3-4 tekster for +Ñ v+ªre meningsfull
-- Kategoriene skal v+ªre p+Ñ norsk bokm+Ñl og passe for aldersgruppen (barn)
-- Unng+Ñ for spesifikke kategorier som bare dekker 1-2 tekster
+- Lag N+ï¿½YAKTIG 12-15 kategorier Gï¿½ï¿½ ikke f+ï¿½rre, ikke flere
+- Kategoriene skal v+ï¿½re TYDELIG FORSKJELLIGE fra hverandre Gï¿½ï¿½ unng+ï¿½ overlapp
+  (f.eks. IKKE ha b+ï¿½de "Natur og dyr" og "Dyreliv og ++kologi" Gï¿½ï¿½ sl+ï¿½ dem sammen til +ï¿½n)
+- Hver kategori skal dekke minst 3-4 tekster for +ï¿½ v+ï¿½re meningsfull
+- Kategoriene skal v+ï¿½re p+ï¿½ norsk bokm+ï¿½l og passe for aldersgruppen (barn)
+- Unng+ï¿½ for spesifikke kategorier som bare dekker 1-2 tekster
 
-Returner KUN et JSON-objekt GÇö ingen forklaring, ingen markdown:
+Returner KUN et JSON-objekt Gï¿½ï¿½ ingen forklaring, ingen markdown:
 {
   "broad_topics": ["Kategori1", "Kategori2", ...],
   "assignments": {
@@ -311,7 +288,7 @@ def run_clustering(client: Groq, extracted: list[dict]) -> dict:
 
     prompt  = "Her er alle tekstene med emner:\n\n" + "\n".join(summaries)
     prompt += (
-        "\n\nLag N+ÿYAKTIG 12-15 brede, ikke-overlappende kategorier og "
+        "\n\nLag N+ï¿½YAKTIG 12-15 brede, ikke-overlappende kategorier og "
         "tildel hver tekst 1-3 kategorier."
     )
 
@@ -332,7 +309,7 @@ def run_clustering(client: Groq, extracted: list[dict]) -> dict:
 
             n = len(result.get("broad_topics", []))
             if not (12 <= n <= 15):
-                print(f"  [!] Got {n} broad topics (expected 12-15) GÇö retrying...")
+                print(f"  [!] Got {n} broad topics (expected 12-15) Gï¿½ï¿½ retrying...")
                 raise ValueError(f"Expected 12-15 broad topics, got {n}")
 
             return result
@@ -348,9 +325,9 @@ def run_clustering(client: Groq, extracted: list[dict]) -> dict:
     raise RuntimeError("Clustering failed after all retries.")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 4 GÇö EXPORT
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 4 Gï¿½ï¿½ EXPORT
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def export_results(extracted: list[dict], clustering: dict, output_path: str):
     assignments      = clustering.get("assignments", {})
@@ -373,9 +350,9 @@ def export_results(extracted: list[dict], clustering: dict, output_path: str):
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"\n  Results written to: {output_path}")
 
-    print(f"\n{'GöÇ'*54}")
+    print(f"\n{'Gï¿½ï¿½'*54}")
     print(f"  BROAD TOPICS GENERATED ({len(broad_topics_list)}):")
-    print(f"{'GöÇ'*54}")
+    print(f"{'Gï¿½ï¿½'*54}")
     for topic in broad_topics_list:
         count = sum(1 for r in rows if topic in r["broad_topics"].split(" | "))
         print(f"  {topic:42s}  ({count} texts)")
@@ -387,9 +364,9 @@ def export_results(extracted: list[dict], clustering: dict, output_path: str):
             print(f"      - {e['title']}")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # MAIN
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def main():
     parser = argparse.ArgumentParser(
@@ -411,11 +388,11 @@ def main():
     client = Groq(api_key=api_key)
     print(f"  Model: {MODEL} (Groq free tier)")
 
-    # GöÇGöÇ Stage 1 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 1 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print("\n[Stage 1] Loading and preprocessing...")
     texts = load_and_preprocess(args.input)
 
-    # GöÇGöÇ Stage 2 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 2 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     if args.skip_extraction:
         print("\n[Stage 2] Skipping extraction, loading from checkpoint...")
         checkpoint = load_checkpoint()
@@ -430,16 +407,16 @@ def main():
         print(f"\n[Stage 2] Extracting topics ({len(texts)} texts, batch size {BATCH_SIZE})...")
         extracted = run_extraction(client, texts)
 
-    # GöÇGöÇ Stage 3 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 3 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print("\n[Stage 3] Clustering into broad topics...")
     clustering = run_clustering(client, extracted)
     print(f"  Generated {len(clustering.get('broad_topics', []))} broad topics.")
 
-    # GöÇGöÇ Stage 4 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 4 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print(f"\n[Stage 4] Exporting to {args.output}...")
     export_results(extracted, clustering, args.output)
 
-    print("\nDone! G£ô")
+    print("\nDone! Gï¿½ï¿½")
 
 
 if __name__ == "__main__":

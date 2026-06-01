@@ -1,53 +1,3 @@
-"""
-topic_pipeline.py
-=================
-Pipeline for extracting and clustering topics from Norwegian children's texts.
-Uses Groq API (llama-3.3-70b-versatile).
-
-STAGES:
-  1.   Load & preprocess
-  2.   Per-text topic extraction
-  2.5  Extraction quality check  GåÉ samples 30 texts for manual review
-  3.   Draft taxonomy proposal
-  3.5  Gap analysis              GåÉ flags missing/overlapping categories
-       [PAUSE GÇö researcher edits taxonomy_draft.json GåÆ taxonomy_final.json]
-  4.   Text assignment
-  4.5  Assignment quality check  GåÉ flags thin/bloated categories, spot checks
-       [PAUSE GÇö researcher reviews, edits assignments.json if needed]
-  5.   Export CSV + JSON artifacts
-
-EVALUATION (--evaluate):
-  Exports evaluation_sample.csv for manual labeling.
-  After manual labeling, run --evaluate --compare to compute metrics.
-
-USAGE:
-  pip install groq pandas python-dotenv
-
-  # Full run:
-  python topic_pipeline.py --input texts.tsv
-
-  # After editing taxonomy_final.json:
-  python topic_pipeline.py --input texts.tsv --assign-only
-
-  # Re-propose taxonomy without re-extracting:
-  python topic_pipeline.py --input texts.tsv --skip-extraction
-
-  # Export evaluation sample:
-  python topic_pipeline.py --input texts.tsv --evaluate
-
-  # Compute metrics after manual labeling:
-  python topic_pipeline.py --input texts.tsv --evaluate --compare
-
-OUTPUT FILES:
-  extracted_topics.json      GÇö per-text extraction results
-  taxonomy_draft.json        GÇö model-proposed taxonomy
-  taxonomy_final.json        GÇö researcher-finalized taxonomy
-  assignments.json           GÇö text_id GåÆ broad_topics mapping
-  results.csv                GÇö final merged output
-  evaluation_sample.csv      GÇö sample for manual review/labeling
-  evaluation_metrics.json    GÇö computed metrics (after --compare)
-"""
-
 import argparse
 import json
 import os
@@ -63,9 +13,9 @@ from groq import Groq
 import pandas as pd
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # CONFIG
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 MODEL            = "llama-3.3-70b-versatile"
 BATCH_SIZE       = 10
@@ -91,9 +41,9 @@ THIN_CATEGORY_THRESHOLD  = 5  # categories with fewer texts flagged as thin
 BLOATED_CATEGORY_THRESHOLD = 40  # categories with more texts flagged as bloated
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # HELPERS
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def fix_encoding(text: str) -> str:
     try:
@@ -123,9 +73,9 @@ def load_json(path: str):
         return json.load(f)
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # SCHEMA VALIDATION
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 class SchemaError(Exception):
     pass
@@ -191,9 +141,9 @@ def validate_assignments(assignments: dict, taxonomy: list, index_to_id: dict) -
     return real_assignments
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 1 GÇö LOAD & PREPROCESS
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 1 Gï¿½ï¿½ LOAD & PREPROCESS
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def strip_markdown(text: str) -> str:
     text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
@@ -267,19 +217,19 @@ def load_and_preprocess(filepath: str) -> list[dict]:
     df      = df.reset_index(drop=True)
     dropped = before - len(df)
     if dropped:
-        print(f"  Dropped {dropped} empty rows GåÆ {len(df)} valid rows remaining.")
+        print(f"  Dropped {dropped} empty rows Gï¿½ï¿½ {len(df)} valid rows remaining.")
 
     texts = [preprocess_row(row) for _, row in df.iterrows()]
     print(f"  Preprocessed {len(texts)} texts.")
     return texts
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 2 GÇö PER-TEXT TOPIC EXTRACTION
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 2 Gï¿½ï¿½ PER-TEXT TOPIC EXTRACTION
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert p+Ñ +Ñ klassifisere norske barnetekster.
-For hver tekst du mottar, skal du returnere KUN et JSON-objekt GÇô ingen forklaring, ingen markdown-blokker.
+EXTRACTION_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ +ï¿½ klassifisere norske barnetekster.
+For hver tekst du mottar, skal du returnere KUN et JSON-objekt Gï¿½ï¿½ ingen forklaring, ingen markdown-blokker.
 
 Format:
 {
@@ -289,12 +239,12 @@ Format:
 }
 
 Regler:
-- Skriv alle emner p+Ñ norsk bokm+Ñl
-- main_topic skal fange tekstens prim+ªre tema
+- Skriv alle emner p+ï¿½ norsk bokm+ï¿½l
+- main_topic skal fange tekstens prim+ï¿½re tema
 - sub_topics: 2-4 underkategorier eller relaterte temaer
-- text_type skal v+ªre N+ÿYAKTIG ett av disse to:
-    "fortelling" GÇö hvis teksten er en historie, novelle, eller narrativ fiksjon med karakterer og handling
-    "fagtekst"   GÇö hvis teksten er informativ, faktabasert eller forklarende
+- text_type skal v+ï¿½re N+ï¿½YAKTIG ett av disse to:
+    "fortelling" Gï¿½ï¿½ hvis teksten er en historie, novelle, eller narrativ fiksjon med karakterer og handling
+    "fagtekst"   Gï¿½ï¿½ hvis teksten er informativ, faktabasert eller forklarende
 - Eksempel fagtekst: {"main_topic": "Rovfugler", "sub_topics": ["Natur og dyreliv", "Norsk fauna"], "text_type": "fagtekst"}
 - Eksempel fortelling: {"main_topic": "Fortelling om katt", "sub_topics": ["Familieliv", "Dyr som husdyr"], "text_type": "fortelling"}"""
 
@@ -344,7 +294,7 @@ def extract_topics_for_text(client: Groq, text: dict) -> dict:
         except Exception as e:
             print(f"    [!] API error for '{text['title']}' (attempt {attempt}): {e}")
             if "rate_limit" in str(e).lower() or "429" in str(e):
-                print(f"    Rate limit GÇö waiting 60s...")
+                print(f"    Rate limit Gï¿½ï¿½ waiting 60s...")
                 time.sleep(60)
                 continue
 
@@ -388,13 +338,13 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
         batch_num     = (batch_start // BATCH_SIZE) + 1
         total_batches = (len(remaining) + BATCH_SIZE - 1) // BATCH_SIZE
 
-        print(f"  Batch {batch_num}/{total_batches} GÇö {len(batch)} texts...")
+        print(f"  Batch {batch_num}/{total_batches} Gï¿½ï¿½ {len(batch)} texts...")
 
         for text in batch:
             result = extract_topics_for_text(client, text)
             results[text["text_id"]] = result
             done  += 1
-            status = "G£ô" if not result["extraction_error"] else "G£ù"
+            status = "Gï¿½ï¿½" if not result["extraction_error"] else "Gï¿½ï¿½"
             print(f"    [{done}/{total}] {status} {text['title'][:50]}")
 
         save_checkpoint(results)
@@ -416,19 +366,19 @@ def run_extraction(client: Groq, texts: list[dict]) -> list[dict]:
         }
         for t in extracted
     ])
-    print(f"  Saved extraction results GåÆ {EXTRACTED_JSON}")
+    print(f"  Saved extraction results Gï¿½ï¿½ {EXTRACTED_JSON}")
 
     return extracted
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 2.5 GÇö EXTRACTION QUALITY CHECK
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 2.5 Gï¿½ï¿½ EXTRACTION QUALITY CHECK
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 #
 # Samples EXTRACTION_SAMPLE_SIZE texts and prints them for researcher review.
 # Saves the sample to evaluation_sample.csv with empty columns for manual labels.
 # This lets the researcher spot problems before they poison the taxonomy.
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def run_extraction_quality_check(extracted: list[dict]) -> list[dict]:
     """
@@ -438,11 +388,11 @@ def run_extraction_quality_check(extracted: list[dict]) -> list[dict]:
     n      = min(EXTRACTION_SAMPLE_SIZE, len(extracted))
     sample = random.sample(extracted, n)
 
-    print(f"\n  {'GöÇ'*60}")
-    print(f"  EXTRACTION QUALITY CHECK GÇö {n} randomly sampled texts:")
-    print(f"  {'GöÇ'*60}")
+    print(f"\n  {'Gï¿½ï¿½'*60}")
+    print(f"  EXTRACTION QUALITY CHECK Gï¿½ï¿½ {n} randomly sampled texts:")
+    print(f"  {'Gï¿½ï¿½'*60}")
     print(f"  {'#':<4} {'Title':<40} {'Type':<12} {'Main Topic':<30} Sub Topics")
-    print(f"  {'GöÇ'*60}")
+    print(f"  {'Gï¿½ï¿½'*60}")
 
     for i, t in enumerate(sample, 1):
         subs  = ", ".join(t.get("sub_topics", []))
@@ -470,30 +420,30 @@ def run_extraction_quality_check(extracted: list[dict]) -> list[dict]:
     df = pd.DataFrame(rows)
     df.to_csv(EVAL_SAMPLE_CSV, index=False, encoding="utf-8-sig")
 
-    print(f"\n  Sample saved GåÆ {EVAL_SAMPLE_CSV}")
+    print(f"\n  Sample saved Gï¿½ï¿½ {EVAL_SAMPLE_CSV}")
     print(f"  Review the sample above. If extractions look wrong,")
     print(f"  note which texts need fixing before continuing.")
 
     return sample
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 3 GÇö DRAFT TAXONOMY PROPOSAL
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 3 Gï¿½ï¿½ DRAFT TAXONOMY PROPOSAL
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-TAXONOMY_SYSTEM_PROMPT = """Du er en ekspert p+Ñ +Ñ lage emnestruktur for norske barnetekster.
+TAXONOMY_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ +ï¿½ lage emnestruktur for norske barnetekster.
 
 Du vil motta en liste over emner hentet fra barnetekster med frekvens, samt antall fortellinger vs fagtekster.
-Basert p+Ñ dette skal du foresl+Ñ 12-15 overordnede kategorier.
+Basert p+ï¿½ dette skal du foresl+ï¿½ 12-15 overordnede kategorier.
 
 Regler:
-- N+ÿYAKTIG 12-15 kategorier
-- Hvert kategorinavn skal v+ªre ET ENKELT ORD p+Ñ norsk bokm+Ñl
-- Kategoriene skal v+ªre brede nok til +Ñ dekke mange tekster
+- N+ï¿½YAKTIG 12-15 kategorier
+- Hvert kategorinavn skal v+ï¿½re ET ENKELT ORD p+ï¿½ norsk bokm+ï¿½l
+- Kategoriene skal v+ï¿½re brede nok til +ï¿½ dekke mange tekster
 - Ingen overlapp mellom kategorier
-- Ordene skal v+ªre enkle og gjenkjennelige for barn mellom 8-12 +Ñr
+- Ordene skal v+ï¿½re enkle og gjenkjennelige for barn mellom 8-12 +ï¿½r
 - Kategoriene skal fungere som interessevalg i et anbefalingssystem
-- Hvis mer enn 10 tekster er fortellinger skal "Fortelling" v+ªre en egen kategori
+- Hvis mer enn 10 tekster er fortellinger skal "Fortelling" v+ï¿½re en egen kategori
 
 Returner KUN et JSON-objekt:
 {
@@ -521,7 +471,7 @@ def build_taxonomy_prompt(extracted: list[dict]) -> str:
         f"- Fortellinger: {fortelling_count}\n\n"
         f"Her er alle tekstenes main_topic med frekvens:\n\n"
         + "\n".join(lines)
-        + "\n\nForesl+Ñ 12-15 overordnede kategorier som dekker disse emnene."
+        + "\n\nForesl+ï¿½ 12-15 overordnede kategorier som dekker disse emnene."
     )
 
 
@@ -558,18 +508,18 @@ def propose_taxonomy(client: Groq, extracted: list[dict]) -> dict:
     raise RuntimeError("Taxonomy proposal failed after all retries.")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 3.5 GÇö GAP ANALYSIS
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 3.5 Gï¿½ï¿½ GAP ANALYSIS
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-GAP_ANALYSIS_SYSTEM_PROMPT = """Du er en ekspert p+Ñ tekstklassifisering.
+GAP_ANALYSIS_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ tekstklassifisering.
 
 Du vil motta:
-1. En liste over foresl+Ñtte brede kategorier
+1. En liste over foresl+ï¿½tte brede kategorier
 2. En liste over ekstraherte main_topics fra tekstene med frekvens
 3. Antall fortellinger i samlingen
 
-Din oppgave er +Ñ finne main_topics som IKKE passer naturlig inn i noen av de foresl+Ñtte kategoriene.
+Din oppgave er +ï¿½ finne main_topics som IKKE passer naturlig inn i noen av de foresl+ï¿½tte kategoriene.
 
 Returner KUN et JSON-objekt:
 {
@@ -577,7 +527,7 @@ Returner KUN et JSON-objekt:
     {
       "topics": ["topic1", "topic2"],
       "reason": "Hvorfor disse ikke passer i noen eksisterende kategori",
-      "suggested_category": "Forslag til ny kategori (ett enkelt ord p+Ñ norsk)"
+      "suggested_category": "Forslag til ny kategori (ett enkelt ord p+ï¿½ norsk)"
     }
   ],
   "warnings": [
@@ -587,9 +537,9 @@ Returner KUN et JSON-objekt:
 }
 
 Hvis alle topics passer inn, returner unmatched som tom liste [].
-V+ªr spesielt oppmerksom p+Ñ:
+V+ï¿½r spesielt oppmerksom p+ï¿½:
 - Matematikk-relaterte topics som kan forveksles med Mat (mat og drikke)
-- Teknologi vs Vitenskap GÇö disse er forskjellige
+- Teknologi vs Vitenskap Gï¿½ï¿½ disse er forskjellige
 - Fortellinger som trenger sin egen kategori hvis det er mange av dem"""
 
 
@@ -604,10 +554,10 @@ def run_gap_analysis(client: Groq, extracted: list[dict], taxonomy: list) -> dic
     fortelling_count = sum(1 for t in extracted if t.get("text_type") == "fortelling")
 
     prompt = (
-        f"Foresl+Ñtte kategorier:\n{taxonomy_str}\n\n"
+        f"Foresl+ï¿½tte kategorier:\n{taxonomy_str}\n\n"
         f"Ekstraherte main_topics med frekvens:\n{topics_str}\n\n"
         f"Antall fortellinger i samlingen: {fortelling_count}\n\n"
-        f"Finn topics som ikke passer inn i noen av de foresl+Ñtte kategoriene, "
+        f"Finn topics som ikke passer inn i noen av de foresl+ï¿½tte kategoriene, "
         f"og gi advarsler om mulige problemer."
     )
 
@@ -636,20 +586,20 @@ def run_gap_analysis(client: Groq, extracted: list[dict], taxonomy: list) -> dic
 
 
 def print_gap_analysis(gaps: dict):
-    print(f"\n  {'GöÇ'*54}")
+    print(f"\n  {'Gï¿½ï¿½'*54}")
     print(f"  GAP ANALYSIS REPORT:")
-    print(f"  {'GöÇ'*54}")
+    print(f"  {'Gï¿½ï¿½'*54}")
     print(f"  Coverage: {gaps.get('coverage', 'N/A')}")
 
     warnings = gaps.get("warnings", [])
     if warnings:
-        print(f"\n  GÜá Warnings:")
+        print(f"\n  Gï¿½ï¿½ Warnings:")
         for w in warnings:
             print(f"    - {w}")
 
     unmatched = gaps.get("unmatched", [])
     if unmatched:
-        print(f"\n  [!] {len(unmatched)} gap(s) found GÇö consider adding these categories:")
+        print(f"\n  [!] {len(unmatched)} gap(s) found Gï¿½ï¿½ consider adding these categories:")
         for gap in unmatched:
             topics    = ", ".join(gap.get("topics", []))
             reason    = gap.get("reason", "")
@@ -658,14 +608,14 @@ def print_gap_analysis(gaps: dict):
             print(f"    Reason:                {reason}")
             print(f"    Suggested category:    '{suggested}'")
     else:
-        print(f"\n  G£ô All topics are covered by the proposed taxonomy.")
+        print(f"\n  Gï¿½ï¿½ All topics are covered by the proposed taxonomy.")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 4 GÇö TEXT ASSIGNMENT
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 4 Gï¿½ï¿½ TEXT ASSIGNMENT
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
-ASSIGNMENT_SYSTEM_PROMPT = """Du er en ekspert p+Ñ +Ñ klassifisere norske barnetekster.
+ASSIGNMENT_SYSTEM_PROMPT = """Du er en ekspert p+ï¿½ +ï¿½ klassifisere norske barnetekster.
 
 Du vil motta:
 1. En godkjent liste over brede kategorier
@@ -674,14 +624,14 @@ Du vil motta:
 Tildel hver tekst 1-3 kategorier fra den godkjente listen.
 
 Regler:
-- Bruk KUN kategorier fra den godkjente listen GÇö ikke oppfinn nye
+- Bruk KUN kategorier fra den godkjente listen Gï¿½ï¿½ ikke oppfinn nye
 - Hver tekst skal ha 1-3 kategorier
-- VIKTIG: Hvis teksttype er "fortelling" skal "Fortelling" ALLTID v+ªre +¬n av kategoriene,
+- VIKTIG: Hvis teksttype er "fortelling" skal "Fortelling" ALLTID v+ï¿½re +ï¿½n av kategoriene,
   i tillegg til relevante tematiske kategorier
-  Eksempel: en fortelling om en katt GåÆ ["Dyr", "Fortelling"]
+  Eksempel: en fortelling om en katt Gï¿½ï¿½ ["Dyr", "Fortelling"]
 - VIKTIG: "Mat" gjelder KUN mat, drikke og kosthold
 - VIKTIG: "Matematikk" gjelder tall, regning, geometri og matematiske begreper
-  GÇö IKKE forveksle Mat og Matematikk
+  Gï¿½ï¿½ IKKE forveksle Mat og Matematikk
 - VIKTIG: "Vitenskap" = naturvitenskapelige fenomener (astronomi, biologi, kjemi, fysikk)
 - VIKTIG: "Teknologi" = oppfinnelser, maskiner, ingeni++rkunst, dataspill, digitale verkt++y
 - Bruk de korte nummerne (1, 2, 3...) som n++kler i assignments
@@ -773,14 +723,14 @@ def assign_texts(client: Groq, taxonomy: list, extracted: list[dict]) -> dict:
     raise RuntimeError("Assignment failed after all retries.")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 4.5 GÇö ASSIGNMENT QUALITY CHECK
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 4.5 Gï¿½ï¿½ ASSIGNMENT QUALITY CHECK
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 #
 # Flags thin and bloated categories.
 # Samples CATEGORY_SPOT_SIZE texts per category for spot checking.
 # Saves spot check to evaluation_sample.csv for manual review.
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def run_assignment_quality_check(
     extracted: list[dict],
@@ -790,11 +740,11 @@ def run_assignment_quality_check(
 ) -> dict:
     """
     Check assignment distribution and sample texts per category for spot checking.
-    Returns a dict of category GåÆ sampled texts.
+    Returns a dict of category Gï¿½ï¿½ sampled texts.
     """
     text_map = {t["text_id"]: t for t in extracted}
 
-    # Build category GåÆ texts mapping
+    # Build category Gï¿½ï¿½ texts mapping
     category_texts = {cat: [] for cat in taxonomy}
     for text_id, cats in assignments.items():
         t = text_map.get(text_id)
@@ -804,9 +754,9 @@ def run_assignment_quality_check(
             if cat in category_texts:
                 category_texts[cat].append(t)
 
-    print(f"\n  {'GöÇ'*60}")
+    print(f"\n  {'Gï¿½ï¿½'*60}")
     print(f"  ASSIGNMENT QUALITY CHECK:")
-    print(f"  {'GöÇ'*60}")
+    print(f"  {'Gï¿½ï¿½'*60}")
 
     thin_categories    = []
     bloated_categories = []
@@ -818,10 +768,10 @@ def run_assignment_quality_check(
         flag  = ""
 
         if count < THIN_CATEGORY_THRESHOLD:
-            flag = " GÜá TOO THIN"
+            flag = " Gï¿½ï¿½ TOO THIN"
             thin_categories.append(cat)
         elif count > BLOATED_CATEGORY_THRESHOLD:
-            flag = " GÜá TOO BROAD"
+            flag = " Gï¿½ï¿½ TOO BROAD"
             bloated_categories.append(cat)
 
         print(f"  {cat:<20} {count:>4} texts{flag}")
@@ -846,23 +796,23 @@ def run_assignment_quality_check(
 
     # Print warnings
     if thin_categories:
-        print(f"\n  GÜá Thin categories (< {THIN_CATEGORY_THRESHOLD} texts) GÇö consider merging:")
+        print(f"\n  Gï¿½ï¿½ Thin categories (< {THIN_CATEGORY_THRESHOLD} texts) Gï¿½ï¿½ consider merging:")
         for cat in thin_categories:
             print(f"    - {cat} ({len(category_texts[cat])} texts)")
 
     if bloated_categories:
-        print(f"\n  GÜá Broad categories (> {BLOATED_CATEGORY_THRESHOLD} texts) GÇö consider splitting:")
+        print(f"\n  Gï¿½ï¿½ Broad categories (> {BLOATED_CATEGORY_THRESHOLD} texts) Gï¿½ï¿½ consider splitting:")
         for cat in bloated_categories:
             print(f"    - {cat} ({len(category_texts[cat])} texts)")
 
     # Save spot check CSV
     df = pd.DataFrame(spot_check_rows)
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
-    print(f"\n  Spot check sample saved GåÆ {output_path}")
+    print(f"\n  Spot check sample saved Gï¿½ï¿½ {output_path}")
     print(f"  Open this file, review each row, fill in 'relevance':")
-    print(f"    primary   GÇö best category for this text")
-    print(f"    secondary GÇö acceptable but not the main category")
-    print(f"    wrong     GÇö this category does not fit at all")
+    print(f"    primary   Gï¿½ï¿½ best category for this text")
+    print(f"    secondary Gï¿½ï¿½ acceptable but not the main category")
+    print(f"    wrong     Gï¿½ï¿½ this category does not fit at all")
     print(f"  Then run --evaluate --compare to compute metrics.")
 
     return {
@@ -873,9 +823,9 @@ def run_assignment_quality_check(
     }
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# EVALUATION GÇö METRICS COMPUTATION
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# EVALUATION Gï¿½ï¿½ METRICS COMPUTATION
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def compute_extraction_metrics(eval_df: pd.DataFrame) -> dict:
     """
@@ -934,10 +884,10 @@ def compute_assignment_metrics(spot_df: pd.DataFrame) -> dict:
     secondary = (labeled["relevance"].str.strip().str.lower() == "secondary").sum()
     wrong     = (labeled["relevance"].str.strip().str.lower() == "wrong").sum()
 
-    # Primary precision GÇö how often is the category the best fit
+    # Primary precision Gï¿½ï¿½ how often is the category the best fit
     primary_precision = primary / total
 
-    # Acceptable precision GÇö primary + secondary (not wrong)
+    # Acceptable precision Gï¿½ï¿½ primary + secondary (not wrong)
     acceptable_precision = (primary + secondary) / total
 
     # Per-category breakdown
@@ -978,7 +928,7 @@ def run_evaluation(compare: bool = False):
 
     metrics = {}
 
-    # Extraction evaluation GÇö always from evaluation_sample.csv
+    # Extraction evaluation Gï¿½ï¿½ always from evaluation_sample.csv
     if os.path.exists(EVAL_SAMPLE_CSV):
         eval_df = pd.read_csv(EVAL_SAMPLE_CSV, dtype=str).fillna("")
         if "correct" in eval_df.columns:
@@ -991,11 +941,11 @@ def run_evaluation(compare: bool = False):
                 if "text_type_accuracy" in m:
                     print(f"  Text type accuracy:  {m['text_type_accuracy']}")
         else:
-            print("\n[Evaluation] evaluation_sample.csv found but no 'correct' column GÇö skipping extraction metrics.")
+            print("\n[Evaluation] evaluation_sample.csv found but no 'correct' column Gï¿½ï¿½ skipping extraction metrics.")
     else:
-        print(f"\n[Evaluation] {EVAL_SAMPLE_CSV} not found GÇö skipping extraction metrics.")
+        print(f"\n[Evaluation] {EVAL_SAMPLE_CSV} not found Gï¿½ï¿½ skipping extraction metrics.")
 
-    # Assignment evaluation GÇö always from assignment_spot_check.csv
+    # Assignment evaluation Gï¿½ï¿½ always from assignment_spot_check.csv
     ASSIGNMENT_SPOT_CSV = "assignment_spot_check.csv"
     if os.path.exists(ASSIGNMENT_SPOT_CSV):
         spot_df = pd.read_csv(ASSIGNMENT_SPOT_CSV, dtype=str).fillna("")
@@ -1014,7 +964,7 @@ def run_evaluation(compare: bool = False):
                 print(f"  Wrong:                {m['wrong']} texts")
                 print(f"\n  Per-category breakdown:")
                 print(f"  {'Category':<20} {'Primary':>8} {'Secondary':>10} {'Wrong':>6} {'Acceptable':>11}")
-                print(f"  {'GöÇ'*58}")
+                print(f"  {'Gï¿½ï¿½'*58}")
                 for cat, cm in m.get("per_category", {}).items():
                     print(f"  {cat:<20} {cm['primary']:>8} {cm['secondary']:>10} "
                           f"{cm['wrong']:>6} {cm['acceptable_precision']:>10.0%}")
@@ -1028,29 +978,29 @@ def run_evaluation(compare: bool = False):
                     for _, row in secondary_rows.iterrows():
                         correct = row.get("correct_category(if not primary)", "")
                         if str(correct).strip():
-                            print(f"    {row['category']:<20} GåÆ "
-                                  f"{row['title'][:35]} GåÆ better: {correct}")
+                            print(f"    {row['category']:<20} Gï¿½ï¿½ "
+                                  f"{row['title'][:35]} Gï¿½ï¿½ better: {correct}")
         else:
-            print("\n[Evaluation] assignment_spot_check.csv found but no 'relevance' column GÇö skipping.")
+            print("\n[Evaluation] assignment_spot_check.csv found but no 'relevance' column Gï¿½ï¿½ skipping.")
     else:
-        print(f"\n[Evaluation] assignment_spot_check.csv not found GÇö skipping assignment metrics.")
+        print(f"\n[Evaluation] assignment_spot_check.csv not found Gï¿½ï¿½ skipping assignment metrics.")
 
     # Save metrics
     save_json(EVAL_METRICS_JSON, metrics)
-    print(f"\n  Metrics saved GåÆ {EVAL_METRICS_JSON}")
+    print(f"\n  Metrics saved Gï¿½ï¿½ {EVAL_METRICS_JSON}")
 
     if "extraction" in metrics:
         save_json("evaluation_extraction_metrics.json", metrics["extraction"])
-        print(f"  Extraction metrics GåÆ evaluation_extraction_metrics.json")
+        print(f"  Extraction metrics Gï¿½ï¿½ evaluation_extraction_metrics.json")
 
     if "assignment" in metrics:
         save_json("evaluation_assignment_metrics.json", metrics["assignment"])
-        print(f"  Assignment metrics GåÆ evaluation_assignment_metrics.json")
+        print(f"  Assignment metrics Gï¿½ï¿½ evaluation_assignment_metrics.json")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
-# STAGE 5 GÇö EXPORT
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+# STAGE 5 Gï¿½ï¿½ EXPORT
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def export_results(extracted: list[dict], taxonomy: list, assignments: dict, output_path: str):
     rows = []
@@ -1069,17 +1019,17 @@ def export_results(extracted: list[dict], taxonomy: list, assignments: dict, out
 
     df = pd.DataFrame(rows)
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
-    print(f"  CSV GåÆ {output_path}")
+    print(f"  CSV Gï¿½ï¿½ {output_path}")
 
     save_json(ASSIGNMENTS_JSON, {
         "taxonomy":    taxonomy,
         "assignments": assignments,
     })
-    print(f"  Assignments GåÆ {ASSIGNMENTS_JSON}")
+    print(f"  Assignments Gï¿½ï¿½ {ASSIGNMENTS_JSON}")
 
-    print(f"\n{'GöÇ'*56}")
+    print(f"\n{'Gï¿½ï¿½'*56}")
     print(f"  FINAL BROAD TOPICS ({len(taxonomy)}):")
-    print(f"{'GöÇ'*56}")
+    print(f"{'Gï¿½ï¿½'*56}")
     for topic in taxonomy:
         count = sum(1 for r in rows if topic in r["broad_topics"].split(" | "))
         print(f"  {topic:44s}  ({count} texts)")
@@ -1096,9 +1046,9 @@ def export_results(extracted: list[dict], taxonomy: list, assignments: dict, out
             print(f"      - {e['title']}")
 
 
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 # MAIN
-# GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+# Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
 
 def main():
     parser = argparse.ArgumentParser(
@@ -1134,11 +1084,11 @@ def main():
     client = Groq(api_key=api_key)
     print(f"  Model: {MODEL}")
 
-    # GöÇGöÇ Stage 1 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 1 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print("\n[Stage 1] Loading and preprocessing...")
     texts = load_and_preprocess(args.input)
 
-    # GöÇGöÇ Stage 2 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 2 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     if args.skip_extraction or args.assign_only:
         print("\n[Stage 2] Loading extracted topics...")
         if os.path.exists(EXTRACTED_JSON):
@@ -1158,14 +1108,14 @@ def main():
         print(f"\n[Stage 2] Extracting topics ({len(texts)} texts)...")
         extracted = run_extraction(client, texts)
 
-        # GöÇGöÇ Stage 2.5: Extraction Quality Check GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+        # Gï¿½ï¿½Gï¿½ï¿½ Stage 2.5: Extraction Quality Check Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
         print(f"\n[Stage 2.5] Extraction quality check...")
         run_extraction_quality_check(extracted)
         print(f"\n  Review the sample above.")
         print(f"  If extractions look good, continue.")
         print(f"  If not, fix the extraction prompt and re-run.")
 
-    # GöÇGöÇ Stage 3 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 3 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     if args.assign_only:
         if not os.path.exists(FINAL_JSON):
             print(f"\nError: {FINAL_JSON} not found.")
@@ -1179,47 +1129,47 @@ def main():
         draft = propose_taxonomy(client, extracted)
         save_json(DRAFT_JSON, draft)
 
-        print(f"\n  Draft taxonomy saved GåÆ {DRAFT_JSON}")
-        print(f"\n  {'GöÇ'*54}")
+        print(f"\n  Draft taxonomy saved Gï¿½ï¿½ {DRAFT_JSON}")
+        print(f"\n  {'Gï¿½ï¿½'*54}")
         print(f"  DRAFT BROAD TOPICS ({len(draft['broad_topics'])}):")
-        print(f"  {'GöÇ'*54}")
+        print(f"  {'Gï¿½ï¿½'*54}")
         for topic in draft["broad_topics"]:
             rationale = draft.get("rationale", {}).get(topic, "")
-            print(f"  GÇó {topic}")
+            print(f"  Gï¿½ï¿½ {topic}")
             if rationale:
-                print(f"    GåÆ {rationale}")
+                print(f"    Gï¿½ï¿½ {rationale}")
 
-        # GöÇGöÇ Stage 3.5: Gap Analysis GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+        # Gï¿½ï¿½Gï¿½ï¿½ Stage 3.5: Gap Analysis Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
         print(f"\n[Stage 3.5] Running gap analysis...")
         gaps = run_gap_analysis(client, extracted, draft["broad_topics"])
         print_gap_analysis(gaps)
 
         print(f"""
-  GòöGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòù
-  Gòæ  RESEARCHER REVIEW STEP 1 GÇö TAXONOMY                 Gòæ
-  Gòæ                                                      Gòæ
-  Gòæ  1. Open: {DRAFT_JSON:<42s}Gòæ
-  Gòæ  2. Review proposed categories AND the gap report    Gòæ
-  Gòæ     - Add suggested categories for any gaps found    Gòæ
-  Gòæ     - Fix any warnings flagged above                 Gòæ
-  Gòæ     - Merge overlapping categories                   Gòæ
-  Gòæ     - Rename to fit your thesis                      Gòæ
-  Gòæ  3. Save your edited version as: {FINAL_JSON:<19s}Gòæ
-  Gòæ  4. Re-run with:                                     Gòæ
-  Gòæ       python topic_pipeline.py \\                     Gòæ
-  Gòæ         --input {Path(args.input).name:<38s}Gòæ
-  Gòæ         --assign-only                                Gòæ
-  GòÜGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGò¥
+  Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+  Gï¿½ï¿½  RESEARCHER REVIEW STEP 1 Gï¿½ï¿½ TAXONOMY                 Gï¿½ï¿½
+  Gï¿½ï¿½                                                      Gï¿½ï¿½
+  Gï¿½ï¿½  1. Open: {DRAFT_JSON:<42s}Gï¿½ï¿½
+  Gï¿½ï¿½  2. Review proposed categories AND the gap report    Gï¿½ï¿½
+  Gï¿½ï¿½     - Add suggested categories for any gaps found    Gï¿½ï¿½
+  Gï¿½ï¿½     - Fix any warnings flagged above                 Gï¿½ï¿½
+  Gï¿½ï¿½     - Merge overlapping categories                   Gï¿½ï¿½
+  Gï¿½ï¿½     - Rename to fit your thesis                      Gï¿½ï¿½
+  Gï¿½ï¿½  3. Save your edited version as: {FINAL_JSON:<19s}Gï¿½ï¿½
+  Gï¿½ï¿½  4. Re-run with:                                     Gï¿½ï¿½
+  Gï¿½ï¿½       python topic_pipeline.py \\                     Gï¿½ï¿½
+  Gï¿½ï¿½         --input {Path(args.input).name:<38s}Gï¿½ï¿½
+  Gï¿½ï¿½         --assign-only                                Gï¿½ï¿½
+  Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½
 """)
         print("  Pipeline paused. Edit taxonomy, then re-run with --assign-only.")
         return
 
-    # GöÇGöÇ Stage 4 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 4 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print(f"\n[Stage 4] Assigning texts to finalized taxonomy...")
     assignments = assign_texts(client, taxonomy, extracted)
     print(f"  Assigned {len(assignments)}/{len(extracted)} texts.")
 
-    # GöÇGöÇ Stage 4.5: Assignment Quality Check GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 4.5: Assignment Quality Check Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print(f"\n[Stage 4.5] Assignment quality check...")
     quality = run_assignment_quality_check(
         extracted, taxonomy, assignments, ASSIGNMENT_EVAL_CSV
@@ -1230,26 +1180,26 @@ def main():
 
     if thin or bloated:
         print(f"""
-  GòöGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòù
-  Gòæ  RESEARCHER REVIEW STEP 2 GÇö ASSIGNMENTS              Gòæ
-  Gòæ                                                      Gòæ
-  Gòæ  Issues were found in the distribution above.        Gòæ
-  Gòæ  Options:                                            Gòæ
-  Gòæ  A) Edit taxonomy_final.json and re-run              Gòæ
-  Gòæ       --assign-only                                  Gòæ
-  Gòæ  B) Manually edit assignments in results.csv         Gòæ
-  Gòæ  C) Accept as-is and proceed                         Gòæ
-  Gòæ                                                      Gòæ
-  Gòæ  After reviewing spot check CSV:                     Gòæ
-  Gòæ    python topic_pipeline.py \\                        Gòæ
-  Gòæ      --input {Path(args.input).name:<40s}Gòæ
-  Gòæ      --evaluate --compare                            Gòæ
-  GòÜGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGòÉGò¥
+  Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
+  Gï¿½ï¿½  RESEARCHER REVIEW STEP 2 Gï¿½ï¿½ ASSIGNMENTS              Gï¿½ï¿½
+  Gï¿½ï¿½                                                      Gï¿½ï¿½
+  Gï¿½ï¿½  Issues were found in the distribution above.        Gï¿½ï¿½
+  Gï¿½ï¿½  Options:                                            Gï¿½ï¿½
+  Gï¿½ï¿½  A) Edit taxonomy_final.json and re-run              Gï¿½ï¿½
+  Gï¿½ï¿½       --assign-only                                  Gï¿½ï¿½
+  Gï¿½ï¿½  B) Manually edit assignments in results.csv         Gï¿½ï¿½
+  Gï¿½ï¿½  C) Accept as-is and proceed                         Gï¿½ï¿½
+  Gï¿½ï¿½                                                      Gï¿½ï¿½
+  Gï¿½ï¿½  After reviewing spot check CSV:                     Gï¿½ï¿½
+  Gï¿½ï¿½    python topic_pipeline.py \\                        Gï¿½ï¿½
+  Gï¿½ï¿½      --input {Path(args.input).name:<40s}Gï¿½ï¿½
+  Gï¿½ï¿½      --evaluate --compare                            Gï¿½ï¿½
+  Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½
 """)
     else:
-        print(f"\n  G£ô Distribution looks good. Proceeding to export.")
+        print(f"\n  Gï¿½ï¿½ Distribution looks good. Proceeding to export.")
 
-    # GöÇGöÇ Stage 5 GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    # Gï¿½ï¿½Gï¿½ï¿½ Stage 5 Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     print(f"\n[Stage 5] Exporting results...")
     export_results(extracted, taxonomy, assignments, args.output)
 
