@@ -36,6 +36,18 @@ MANIFEST
 *.manifest
 *.spec
 
+# All csv file
+*.csv
+
+# JSON files that may have data
+topic_groq/*.json
+difficulty/*.json
+difficulty_lix/*.json
+difficulty_lix_v2/*.json
+
+
+
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
